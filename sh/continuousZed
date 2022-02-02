@@ -1,0 +1,6 @@
+#!/bin/bash
+echo "Greetings. This is Zed!"
+echo "Activating continuous Zed"
+sleep 0.5
+echo "done"
+echo "Continuous Zed out."

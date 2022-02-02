@@ -1,0 +1,88 @@
+'''
+Created on Dec 9, 2021
+
+@author: blew
+'''
+import os,sys
+
+__version__ = 0.1
+__date__ = '2022-01-10'
+__updated__ = '2021-01-10'
+
+from argparse import ArgumentParser
+from argparse import RawDescriptionHelpFormatter
+
+def get_parser():
+    
+    program_name = os.path.basename(sys.argv[0])
+    program_version = "v%s" % __version__
+    program_build_date = str(__updated__)
+    program_version_message = '%%(prog)s %s (%s)' % (program_version, program_build_date)
+    # try:
+    #     program_shortdesc = __import__('__main__').__doc__.split("\n")[1] if len(__import__('__main__').__doc__.split("\n"))>=2 else ''
+    # except:
+    program_shortdesc="Script to manage slowly varying RT32 ZD pointing corrections."
+    program_epilog ='''
+    
+
+
+
+    
+Examples:
+
+continuousZed.py --help
+
+'''
+    program_license = '''%s
+
+  Created by Bartosz Lew on %s.
+  Copyright 2021 Bartosz Lew. All rights reserved.
+
+  Licensed under the Apache License 2.0
+  http://www.apache.org/licenses/LICENSE-2.0
+
+  Distributed on an "AS IS" basis without warranties
+  or conditions of any kind, either express or implied.
+
+USAGE
+''' % (program_shortdesc, str(__date__))
+
+    try:
+        # Setup argument parser
+        parser = ArgumentParser(description=program_license, epilog=program_epilog, formatter_class=RawDescriptionHelpFormatter)
+        parser.add_argument("-v", "--verbose", dest="verbose", action="count", help="set verbosity level [default: %(default)s]", default=0)
+        parser.add_argument('-V', '--version', action='version', version=program_version_message)
+        parser.add_argument(dest="paths", help="logfile.log [default: %(default)s]", metavar="path", nargs='*')
+        parser.add_argument('--medianZD', action='store_true',
+                            help='Calculate median ZD from recent observations. [default: %(default)s]', 
+                            default=False)
+        # parser.add_argument('-o', type=str,
+        #                     help='Print content of widom file. [default: %(default)s]', 
+        #                     default='')
+        parser.add_argument('--test_rt32_comm', action='store_true',
+                            help='test_rt32_comm [default: %(default)s]', 
+                            default=False)
+
+        parser.add_argument('--setauto', action='store_true',
+                            help='calculate median ZD correction and send the result to RT-32 control system [default: %(default)s]', 
+                            default=False)
+
+        parser.add_argument('--set', type=str,
+                            help='send ZD correction to RT-32 control system (units: deg) [default: %(default)s]', 
+                            default='')
+
+        # Process arguments
+        args = parser.parse_args()
+
+    except KeyboardInterrupt:
+        ## handle keyboard interrupt ###
+        raise
+#     except Exception as e:
+#         if DEBUG or TESTRUN:
+#             raise(e)
+#         indent = len(program_name) * " "
+#         sys.stderr.write(program_name + ": " + repr(e) + "\n")
+#         sys.stderr.write(indent + "  for help use --help")
+#         return 2
+        
+    return args

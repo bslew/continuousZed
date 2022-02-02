@@ -1,6 +1,6 @@
 #!/bin/bash
 echo "Greetings. This is Zed!"
 echo "Activating continuous Zed"
-sleep 0.5
+$HOME/continuousZed/venv/bin/continuousZed.py --setauto
 echo "done"
 echo "Continuous Zed out."

@@ -53,8 +53,8 @@ USAGE
         parser.add_argument("-v", "--verbose", dest="verbose", action="count", help="set verbosity level [default: %(default)s]", default=0)
         parser.add_argument('-V', '--version', action='version', version=program_version_message)
         parser.add_argument(dest="paths", help="logfile.log [default: %(default)s]", metavar="path", nargs='*')
-        parser.add_argument('--medianZD', action='store_true',
-                            help='Calculate median ZD from recent observations. [default: %(default)s]', 
+        parser.add_argument('--median', action='store_true',
+                            help='Calculate median corrections from recent observations. [default: %(default)s]', 
                             default=False)
         # parser.add_argument('-o', type=str,
         #                     help='Print content of widom file. [default: %(default)s]', 
@@ -63,11 +63,11 @@ USAGE
                             help='test_rt32_comm [default: %(default)s]', 
                             default=False)
 
-        parser.add_argument('--setauto', action='store_true',
+        parser.add_argument('--set_dZD_auto', action='store_true',
                             help='calculate median ZD correction and send the result to RT-32 control system [default: %(default)s]', 
                             default=False)
 
-        parser.add_argument('--set', type=str,
+        parser.add_argument('--set_dZD', type=str,
                             help='send ZD correction to RT-32 control system (units: deg) [default: %(default)s]', 
                             default='')
 

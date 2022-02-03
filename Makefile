@@ -39,7 +39,7 @@ dw_data:
 	scp oper@annaring:/home/oper/scan/FastScan_6.70.off data
 
 send_zed_to_rt4:
-	source ${VENV}/bin/activate && continuousZed.py --setauto
+	source ${VENV}/bin/activate && continuousZed.py --set_dZD_auto
 	
 zed: dw_data send_zed_to_rt4
 	

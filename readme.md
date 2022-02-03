@@ -32,8 +32,6 @@ pip install -r requirements.txt
 
 ```
 
-Make sure the venv is located in antabTr subdirectory.
-
 Execute
 
 ```

@@ -53,9 +53,14 @@ class fastScanCorrections():
         '''
         self.dZD=np.array([ float(x[12]) for x in self.pointing_data],dtype=float)
     
+        '''
+        extract dAZ*sin(ZD)
+        '''
+        self.dCrossElev=np.array([ float(x[6])*np.sin(x[11]*np.pi/180) for x in self.pointing_data],dtype=float)
+
     
     def get_median(self):
-        return np.median(self.dZD)
+        return np.median(self.dCrossElev),np.median(self.dZD)
         
     def __repr__(self):
         # return ''.join(self.pointing_data)
@@ -66,7 +71,7 @@ class fastScanCorrections():
         return 'Median ZD correction [mdeg]: {}'.format(np.median(self.dZD))
             
 
-def get_median_ZD_correction(args,cfg):
+def get_median_corrections(args,cfg):
     '''
     calculate median pointing correction
     
@@ -83,5 +88,5 @@ def get_median_ZD_correction(args,cfg):
     tmscale=cfg.getint('ZED','time_scale')
     P=fastScanCorrections(f,tmscale=tmscale)
     print(P)
-    mdZD=P.get_median()
-    return mdZD
+    mCrossElev,mdZD=P.get_median()
+    return mCrossElev,mdZD

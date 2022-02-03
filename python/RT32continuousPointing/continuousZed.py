@@ -40,13 +40,13 @@ def main(argv=None): # IGNORE:C0111
 
     
     if args.medianZD:
-        pointingCorrections.get_median_ZD_correction(args,cfg)
+        pointingCorrections.get_median_correction(args,cfg)
     if args.test_rt32_comm:
         rt32comm.rt32tcpclient().connectRT4().send_cmd('flagM -10 0')
         # print(r)
         
     if args.setauto:
-        dZD=pointingCorrections.get_median_ZD_correction(args,cfg)
+        dCrossElev,dZD=pointingCorrections.get_median_correction(args,cfg)
         corr=int(dZD*10000)
         print("Sending RT-32 ZD pointing correction [10^-4 deg]: {}".format(corr))
         rt32comm.rt32tcpclient().connectRT4().send_cmd('flagM -10 %i' % corr)

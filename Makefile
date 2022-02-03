@@ -21,7 +21,7 @@ install:
 	@echo "The original file will be moved to $(HOME)/.config/${PROG}/${PROG}.ini.bak"
 	@echo "Press enter to continue..."
 	@read
-	@if [ -f $(HOME)/.config/${PROG}/${PROG}.ini ]; then mv $(HOME)/.config/${PROG}/${PROG}.ini $(HOME)/.config/antabfs/antabfs.ini.bak ; fi
+	@if [ -f $(HOME)/.config/${PROG}/${PROG}.ini ]; then mv $(HOME)/.config/${PROG}/${PROG}.ini $(HOME)/.config/${PROG}/${PROG}.ini.bak ; fi
 	cp ${PROG}.ini $(HOME)/.config/${PROG}/${PROG}.ini
 	@echo "done"
 

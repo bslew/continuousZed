@@ -49,7 +49,7 @@ def main(argv=None): # IGNORE:C0111
         dZD=pointingCorrections.get_median_ZD_correction(args,cfg)
         corr=int(dZD*10000)
         print("Sending RT-32 ZD pointing correction [10^-4 deg]: {}".format(corr))
-        # rt32comm.rt32tcpclient().connectRT4().send_cmd('flagM -10 %i' % corr)
+        rt32comm.rt32tcpclient().connectRT4().send_cmd('flagM -10 %i' % corr)
         
     if args.set!='':
         try:

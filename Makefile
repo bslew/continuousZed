@@ -35,5 +35,11 @@ help:
 	@echo ""
 
 dw_data:
+	-mkdir data
 	scp oper@annaring:/home/oper/scan/FastScan_6.70.off data
 
+send_zed_to_rt4:
+	source ${VENV}/bin/activate && continuousZed.py --setauto
+	
+zed: dw_data send_zed_to_rt4
+	

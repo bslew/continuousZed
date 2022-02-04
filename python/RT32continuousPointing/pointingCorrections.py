@@ -38,7 +38,7 @@ class fastScanCorrections():
         tdelta=datetime.timedelta(days=self.time_offset)
         dt0=datetime.datetime.utcnow()-tdelta
         
-        pointing_data=[ re.sub(',','',x).split(' ') for x in self.data]
+        pointing_data=[ re.sub(',','',x).split(' ') for x in self.data if len(x.split(' '))==13 ]
         
         todtstr=lambda x: '{}-{}-{} {}'.format(x[3],x[2],x[1],x[4])
         dt=lambda x: datetime.datetime.strptime(todtstr(x),'%Y-%m-%d %H:%M:%S')

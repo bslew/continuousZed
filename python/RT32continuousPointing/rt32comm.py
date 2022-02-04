@@ -17,11 +17,11 @@ class rt32tcpclient():
         else:
             self.RT4sock = socket.socket()
 
-    def connectRT4(self,RT4host='192.168.1.4',RT4port=3490):
+    def connectRT4(self,host='192.168.1.4',port=3490):
         
         
         # Connect the socket to the port where the server is listening
-        server_address = (RT4host, int(RT4port))
+        server_address = (host, int(port))
     #     print >>sys.stderr, 'connecting to %s port %s' % server_address
         if sys.version_info >= (2, 7):
             self.RT4sock = socket.create_connection(server_address)

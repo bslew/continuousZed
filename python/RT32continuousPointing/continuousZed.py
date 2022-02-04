@@ -26,6 +26,13 @@ TESTRUN = 0
 PROFILE = 0
 
 
+def sendZDoffset(corr,cfg):
+    print("Sending RT-32 ZD pointing correction [10^-4 deg]: {}".format(corr))
+    rt32comm.rt32tcpclient().connectRT4(
+        host=cfg['RT32']['host'],
+        port=cfg.getint('RT32','port'),
+        ).send_cmd('flagM -10 %i' % corr)
+    
 
 def main(argv=None): # IGNORE:C0111
     '''Command line options.'''
@@ -42,21 +49,26 @@ def main(argv=None): # IGNORE:C0111
     if args.median:
         pointingCorrections.get_median_corrections(args,cfg)
     if args.test_rt32_comm:
-        rt32comm.rt32tcpclient().connectRT4().send_cmd('flagM -10 0')
+        rt32comm.rt32tcpclient().connectRT4(
+            host=cfg['RT32']['host'],
+            port=cfg.getint('RT32','port'),
+            ).send_cmd('flagM -10 0')
         # print(r)
         
     if args.set_dZD_auto:
-        dCrossElev,dZD=pointingCorrections.get_median_corrections(args,cfg)
-        corr=int(dZD*10000)
-        print("Sending RT-32 ZD pointing correction [10^-4 deg]: {}".format(corr))
-        rt32comm.rt32tcpclient().connectRT4().send_cmd('flagM -10 %i' % corr)
+        try:
+            _,dZD=pointingCorrections.get_median_corrections(args,cfg)
+            corr=int(dZD*10000)
+            sendZDoffset(corr, cfg)
+        except ValueError:
+            print("Could not set value")
+            pass
         
     if args.set_dZD!='':
         try:
             dZD=float(args.set_dZD)
-            corr=int(dZD*10000)
-            print("Sending RT-32 ZD pointing correction [10^-4 deg]: {}".format(corr))
-            rt32comm.rt32tcpclient().connectRT4().send_cmd('flagM -10 %i' % corr)
+            corr=int(dZD*10000) # convert from deg to 1e-4deg
+            sendZDoffset(corr, cfg)
         except ValueError:
             print("Could not set value")
             pass

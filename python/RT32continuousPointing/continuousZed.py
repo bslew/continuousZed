@@ -13,7 +13,7 @@ import os
 
 import numpy as np
 
-from RT32continuousPointing import config_file, zed_parser, pointingCorrections, rt32comm
+from RT32continuousPointing import config_file, zed_parser, pointingCorrections, rt32comm, zedLogger
 
 
 __all__ = []
@@ -45,6 +45,8 @@ def main(argv=None): # IGNORE:C0111
     args = zed_parser.get_parser()
     cfg=config_file.readConfigFile(verbosity=args.verbose)
 
+    logger=zedLogger.get_logging('continuousZed', fname='continuousZed.log', mode='a')
+    
     
     if args.median:
         pointingCorrections.get_median_corrections(args,cfg)
@@ -60,8 +62,9 @@ def main(argv=None): # IGNORE:C0111
             _,dZD=pointingCorrections.get_median_corrections(args,cfg)
             corr=int(dZD*10000)
             sendZDoffset(corr, cfg)
+            logger.info("new continuous ZD correction: {}".format(corr))
         except ValueError:
-            print("Could not set value")
+            logger.info("Could not set ZD correction")
             pass
         
     if args.set_dZD!='':
@@ -69,8 +72,9 @@ def main(argv=None): # IGNORE:C0111
             dZD=float(args.set_dZD)
             corr=int(dZD*10000) # convert from deg to 1e-4deg
             sendZDoffset(corr, cfg)
+            logger.info("new continuous ZD correction: {}".format(corr))
         except ValueError:
-            print("Could not set value")
+            logger.info("Could not set ZD correction")
             pass
         
         

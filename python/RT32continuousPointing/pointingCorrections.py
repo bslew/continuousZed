@@ -20,6 +20,7 @@ class fastScanCorrections():
         Constructor
         '''
         self.data=[]
+        self.path=path
         if os.path.isfile(path):
             with open(path,"r") as f:
                 self.data=f.readlines()
@@ -68,7 +69,7 @@ class fastScanCorrections():
     def __repr__(self):
         # return ''.join(self.pointing_data)
         mCrossElev,mdZD=self.get_median()
-        s=''
+        s='Data file: {}\n'.format(self.path)
         s+='Pointing observations: {}\n'.format(len(self.dCrossElev))
         s+='Median ZD correction [mdeg]: {}\n'.format(mdZD*1000)
         s+='Median cross-elevation correction [mdeg]: {}\n'.format(mCrossElev*1000)

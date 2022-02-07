@@ -21,14 +21,13 @@ Download the package from git repository
 ## Installation steps
 
 Change directory to newly downloaded continuousZed repository, create and activate virtual environment,
-update it and install required packages.
+update it.
 
 ```
 cd continuousZed
 python3 -m venv venv
 . venv/bin/activate
 pip install --upgrade pip
-pip install -r requirements.txt
 
 ```
 
@@ -60,19 +59,19 @@ continuousZed.py --help
 To calculate and set ZD correction using the last 90 days median type:
 
 ```
-continuousZed.py --setauto
+continuousZed.py --set_dZD_auto
 ```
 
 To set the correction to any other value type eg.:
 
 ```
-continuousZed.py --set -0.020
+continuousZed.py --set_dZD -0.020
 ```
 
 To null corrections type:
 
 ```
-continuousZed.py --set 0
+continuousZed.py --set_dZD 0
 ```
 
 

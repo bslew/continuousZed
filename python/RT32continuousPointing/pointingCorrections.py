@@ -75,10 +75,11 @@ class fastScanCorrections():
         add continuous corrections using their use history as 
         modeled by contcorr interpolation object
         '''
-        cont=[contcorr(dt) for dt in self.dt]
-        
-        self.dZD=[x+corr[0] for x,corr in zip(self.dZD,cont)]
-        self.dCrossElev=[x+corr[1] for x,corr in zip(self.dCrossElev,cont)]
+        cont=contcorr(self.dt)
+        print(self.dt)
+        print(cont)
+        self.dZD=[x+c for x,c in zip(self.dZD,cont[0])]
+        self.dCrossElev=[x+c for x,c in zip(self.dCrossElev,cont[1])]
 
     def addZDoffsetAfter(self,dtstr,offset,fmt='%Y-%m-%d %H:%M:%S'):
         dt=datetime.datetime.strptime(dtstr,fmt)
@@ -161,10 +162,10 @@ class continuousCorrections():
         self.dt=[ datetime.datetime.strptime(x, '%Y-%m-%dT%H:%M:%S') for x in self.temp[:,0] ]
         self.dt0=self.dt[0]
         self.x=[(dt-self.dt0).total_seconds() for dt in self.dt]
-        self.dZD=self.temp[:,1]
-        self.dxZD=self.temp[:,2]
-        self.val_inter_dZD=interpolate.interp1d(self.x,self.y,fill_value="extrapolate", kind='previous')
-        self.val_inter_dxZD=interpolate.interp1d(self.x,self.y,fill_value="extrapolate", kind='previous')
+        self.dZD=np.array(self.temp[:,1],dtype=float)
+        self.dxZD=np.array(self.temp[:,2],dtype=float)
+        self.val_inter_dZD=interpolate.interp1d(self.x,self.dZD,fill_value="extrapolate", kind='previous')
+        self.val_inter_dxZD=interpolate.interp1d(self.x,self.dxZD,fill_value="extrapolate", kind='previous')
     def toX(self,dt : list):
         return [(x-self.dt0).total_seconds() for x in dt ]
     

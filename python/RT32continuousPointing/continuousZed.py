@@ -64,10 +64,10 @@ def main(argv=None): # IGNORE:C0111
     
     if args.median:
         pointingCorrections.get_median_corrections(args,cfg)
-        data=rt32comm.getCurrentContinuousCorrections()
+        # data=rt32comm.getCurrentContinuousCorrections()
         # print(data)
-        logger.info('Actual continuous corrections ZD [deg]: {}'.format(data['cont_dZD']))
-        logger.info('Actual continuous corrections xZD [deg]: {}'.format(data['cont_dxElev']))
+        # logger.info('Actual continuous corrections ZD [deg]: {}'.format(data['cont_dZD']))
+        # logger.info('Actual continuous corrections xZD [deg]: {}'.format(data['cont_dxElev']))
             
     if args.test_rt32_comm:
         rt32comm.rt32tcpclient().connectRT4(

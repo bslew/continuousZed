@@ -67,9 +67,21 @@ USAGE
                             help='calculate median ZD correction and send the result to RT-32 control system [default: %(default)s]', 
                             default=False)
 
+        parser.add_argument('--logRT32stats', action='store_true',
+                            help='request and store RT-32 control system pointing settings [default: %(default)s]', 
+                            default=False)
+
         parser.add_argument('--set_dZD', type=str,
                             help='send ZD correction to RT-32 control system (units: deg) [default: %(default)s]', 
                             default='')
+        
+        parser.add_argument('--plot', action='store_true',
+                            help='plot loaded corrections')
+
+        parser.add_argument('--temp', type=str, dest='temperatures_file',
+                            help='File containing UTC dates and temperatueres in degC in format 2020-11-01T02:57:07 5.620000 [default: %(default)s]', 
+                            default='')
+
 
         # Process arguments
         args = parser.parse_args()

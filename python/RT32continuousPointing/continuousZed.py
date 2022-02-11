@@ -10,6 +10,7 @@ continuousZed -- fetch/calculate/send time-averaged ZD pointing corrections
 
 import sys
 import os
+import datetime
 
 import numpy as np
 
@@ -47,9 +48,27 @@ def main(argv=None): # IGNORE:C0111
 
     logger=zedLogger.get_logging('continuousZed', fname='continuousZed.log', mode='a')
     
+    if args.logRT32stats:
+        data=rt32comm.getCurrentContinuousCorrections()
+        of=os.path.join(cfg['DATA']['pointing_data_dir'],cfg['DATA']['pointing_data_file'])
+        with open(of,'a') as f:
+            now=datetime.datetime.utcnow()
+            s='{} {} {}\n'.format(
+                datetime.datetime.strftime(now,'%Y-%m-%d %H:%M:%S'),
+                data['cont_dZD'],
+                data['cont_dxElev'])
+            f.write(s)
+        logger.info('stats saved to {}'.format(of))
+        # logger.info('Actual continuous corrections xZD [deg]: {}'.format(data['cont_dxElev']))
+
     
     if args.median:
         pointingCorrections.get_median_corrections(args,cfg)
+        data=rt32comm.getCurrentContinuousCorrections()
+        # print(data)
+        logger.info('Actual continuous corrections ZD [deg]: {}'.format(data['cont_dZD']))
+        logger.info('Actual continuous corrections xZD [deg]: {}'.format(data['cont_dxElev']))
+            
     if args.test_rt32_comm:
         rt32comm.rt32tcpclient().connectRT4(
             host=cfg['RT32']['host'],

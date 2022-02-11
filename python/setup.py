@@ -29,6 +29,7 @@ setup(name='RT32continuousPointing',
       packages = ['RT32continuousPointing',
                   ],
       scripts=['RT32continuousPointing/continuousZed.py',
+               'plot_corrections.py',
                ],
       classifiers=[
         "Development Status :: 3 - Alpha",

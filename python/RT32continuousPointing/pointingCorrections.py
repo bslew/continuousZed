@@ -8,6 +8,7 @@ import os,sys
 import re
 import datetime
 import numpy as np
+import matplotlib.pyplot as plt
 
 class fastScanCorrections():
     '''
@@ -34,12 +35,15 @@ class fastScanCorrections():
 
         self.process_data()
         
-        
+    def get_dt(self):
+        return self.dt
+    
     def process_data(self):
         tdelta=datetime.timedelta(days=self.time_offset)
         dt0=datetime.datetime.utcnow()-tdelta
         
-        pointing_data=[ re.sub(',','',x).split(' ') for x in self.data if len(x.split(' '))==13 ]
+        pointing_data=[ re.sub(',','',x).split(' ') for x in self.data 
+                       if (len(x.split(' '))==13 and x[0]!='#') ]
         
         todtstr=lambda x: '{}-{}-{} {}'.format(x[3],x[2],x[1],x[4])
         dt=lambda x: datetime.datetime.strptime(todtstr(x),'%Y-%m-%d %H:%M:%S')
@@ -47,7 +51,9 @@ class fastScanCorrections():
         '''
         select by time
         '''
+        
         self.pointing_data=[ x for x in pointing_data if dt(x)>dt0]
+        self.dt=[ dt(x) for x in pointing_data if dt(x)>dt0]
         
         '''
         extract dZD
@@ -59,6 +65,18 @@ class fastScanCorrections():
         '''
         self.dCrossElev=np.array([ float(x[6])*np.sin(float(x[11])*np.pi/180) for x in self.pointing_data],dtype=float)
 
+
+    def addZDoffsetAfter(self,dtstr,offset,fmt='%Y-%m-%d %H:%M:%S'):
+        dt=datetime.datetime.strptime(dtstr,fmt)
+        print(dt)
+        off=lambda x,t,off: x+off if t>dt else x
+        if isinstance(offset,float):    
+                self.dZD=[ off(x,t,offset) for x,t in zip(self.dZD,self.dt) ]
+        else:
+                self.dZD=[ off(x,t,o) for x,t,o in zip(self.dZD,self.dt,offset) ]
+        print(len(self.dZD))
+        print(len(self.dt))
+        
     
     def get_median(self):
         '''
@@ -99,4 +117,18 @@ def get_median_corrections(args,cfg):
     P=fastScanCorrections(f,tmscale=tmscale)
     print(P)
     mCrossElev,mdZD=P.get_median()
+
+    if args.plot:
+        plot_corrections(P)
+    
     return mCrossElev,mdZD
+
+
+def plot_corrections(P):
+    '''
+    '''
+    plt.plot(P.dt,P.dZD,label='$\Delta$ZD')
+    plt.legend()
+    plt.show()
+    
+    

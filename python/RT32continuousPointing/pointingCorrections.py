@@ -76,8 +76,8 @@ class fastScanCorrections():
         modeled by contcorr interpolation object
         '''
         cont=contcorr(self.dt)
-        print(self.dt)
-        print(cont)
+        # print(self.dt)
+        # print(cont)
         self.dZD=[x+c for x,c in zip(self.dZD,cont[0])]
         self.dCrossElev=[x+c for x,c in zip(self.dCrossElev,cont[1])]
 

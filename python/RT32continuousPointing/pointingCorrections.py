@@ -130,12 +130,14 @@ def get_median_corrections(args,cfg):
     f=os.path.join(cfg['DATA']['cross_scan_data_dir'],cfg['DATA']['cross_scan_data_file'])
     tmscale=cfg.getint('ZED','time_scale')
     P=fastScanCorrections(f,tmscale=tmscale)
+    print('Pointing corrections ')
     print(P)
 
     f=os.path.join(cfg['DATA']['pointing_data_dir'],cfg['DATA']['pointing_data_file'])
     contCorr=continuousCorrections(f)
     
     P.addContinuousCorrections(contCorr)
+    print('Continuous corrections')
     print(P)
     mCrossElev,mdZD=P.get_median()
 

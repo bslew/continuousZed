@@ -36,11 +36,15 @@ help:
 
 dw_data:
 	-mkdir data
+	-scp oper@annaring:/home/oper/scan/FastScan_5.00.off data
 	-scp oper@annaring:/home/oper/scan/FastScan_6.70.off data
 	-scp oper@annaring:/home/oper/scan/FastScan_12.00.off data
 	-scp oper@annaring:/home/oper/scan/FastScan_22.00.off data
 
 	-scp rt32time@galaxy:~/continuousZed/data/continuous_corrections.txt data
+
+cat_data:
+	more data/FastScan_*.off
 
 send_zed_to_rt4:
 	source ${VENV}/bin/activate && continuousZed.py --set_dZD_auto

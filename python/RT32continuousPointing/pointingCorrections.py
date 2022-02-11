@@ -9,6 +9,7 @@ import re
 import datetime
 import numpy as np
 import matplotlib.pyplot as plt
+from scipy import interpolate
 
 class fastScanCorrections():
     '''
@@ -65,6 +66,19 @@ class fastScanCorrections():
         '''
         self.dCrossElev=np.array([ float(x[6])*np.sin(float(x[11])*np.pi/180) for x in self.pointing_data],dtype=float)
 
+    def addZDofset(self,offset):
+        self.dZD+=offset
+        return self
+    
+    def addContinuousCorrections(self,contcorr):
+        '''
+        add continuous corrections using their use history as 
+        modeled by contcorr interpolation object
+        '''
+        cont=[contcorr(dt) for dt in self.dt]
+        
+        self.dZD=[x+corr[0] for x,corr in zip(self.dZD,cont)]
+        self.dCrossElev=[x+corr[1] for x,corr in zip(self.dCrossElev,cont)]
 
     def addZDoffsetAfter(self,dtstr,offset,fmt='%Y-%m-%d %H:%M:%S'):
         dt=datetime.datetime.strptime(dtstr,fmt)
@@ -116,6 +130,12 @@ def get_median_corrections(args,cfg):
     tmscale=cfg.getint('ZED','time_scale')
     P=fastScanCorrections(f,tmscale=tmscale)
     print(P)
+
+    f=os.path.join(cfg['DATA']['pointing_data_dir'],cfg['DATA']['pointing_data_file'])
+    contCorr=continuousCorrections(f)
+    
+    P.addContinuousCorrections(contCorr)
+    print(P)
     mCrossElev,mdZD=P.get_median()
 
     if args.plot:
@@ -131,4 +151,34 @@ def plot_corrections(P):
     plt.legend()
     plt.show()
     
+    
+    
+class continuousCorrections():
+    def __init__(self, in_file=None):
+        self.in_file=in_file
+        
+        self.temp=np.loadtxt(in_file, dtype=str)
+        self.dt=[ datetime.datetime.strptime(x, '%Y-%m-%dT%H:%M:%S') for x in self.temp[:,0] ]
+        self.dt0=self.dt[0]
+        self.x=[(dt-self.dt0).total_seconds() for dt in self.dt]
+        self.dZD=self.temp[:,1]
+        self.dxZD=self.temp[:,2]
+        self.val_inter_dZD=interpolate.interp1d(self.x,self.y,fill_value="extrapolate", kind='previous')
+        self.val_inter_dxZD=interpolate.interp1d(self.x,self.y,fill_value="extrapolate", kind='previous')
+    def toX(self,dt : list):
+        return [(x-self.dt0).total_seconds() for x in dt ]
+    
+    def __call__(self,dt : list):    
+        '''
+        calculate continuous corrections used up to given datetime
+        
+        parameters
+        ----------
+            dt - datetime object for which interpolated values are to be calculated
+        
+        returns
+        -------
+            tuple(dZD,dxZD)
+        '''
+        return self.val_inter_dZD(self.toX(dt)),self.val_inter_dxZD(self.toX(dt))
     

@@ -54,7 +54,7 @@ def main(argv=None): # IGNORE:C0111
         with open(of,'a') as f:
             now=datetime.datetime.utcnow()
             s='{} {} {}\n'.format(
-                datetime.datetime.strftime(now,'%Y-%m-%d %H:%M:%S'),
+                datetime.datetime.strftime(now,'%Y-%m-%dT%H:%M:%S'),
                 data['cont_dZD'],
                 data['cont_dxElev'])
             f.write(s)

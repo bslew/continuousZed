@@ -156,7 +156,23 @@ def plot_corrections(P):
     
     
     
+def saveContinuousCorrections(fname, dZD, dxZD):
+    of=fname
+    with open(of,'a') as f:
+        now=datetime.datetime.utcnow()
+        s='{} {} {}\n'.format(
+            datetime.datetime.strftime(now,'%Y-%m-%dT%H:%M:%S'),
+            dZD,
+            dxZD)
+        f.write(s)
+    
+
 class continuousCorrections():
+    '''
+    continuous corrections interpolation object.
+    Given a path to log file with history of continuous corrections changes 
+    the class allows to obtain value for any given date
+    '''
     def __init__(self, in_file=None):
         self.in_file=in_file
         

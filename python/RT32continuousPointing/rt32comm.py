@@ -49,18 +49,22 @@ class rt32tcpclient():
 
 
 def getCurrentContinuousCorrections(host='192.168.1.4',port=33033,ans_host='192.168.1.255',ans_port=33036):
-    s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP)
-    s.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
-    DATA='7'
-    s.bind((ans_host, ans_port))
-    s.sendto(DATA.encode(), (host, int(port)))
-    
-    data, addr = s.recvfrom(1500)
-    dstr=data.decode()
-    dstr=dstr[:-1] if dstr.endswith(',') else dstr
-    
-    pointing_stats={}
-    for kv in dstr.split(','):
-        k,v=kv.split('=')
-        pointing_stats[k]=v
+    try:
+        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP)
+        s.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
+        DATA='7'
+        s.bind((ans_host, ans_port))
+        s.sendto(DATA.encode(), (host, int(port)))
+        
+        data, addr = s.recvfrom(1500)
+        dstr=data.decode()
+        dstr=dstr[:-1] if dstr.endswith(',') else dstr
+        
+        pointing_stats={}
+        for kv in dstr.split(','):
+            k,v=kv.split('=')
+            pointing_stats[k]=v
+    except OSError:
+        print('cound not get current continuous corrections from RT32')
+        return None
     return pointing_stats

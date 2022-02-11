@@ -50,15 +50,13 @@ def main(argv=None): # IGNORE:C0111
     
     if args.logRT32stats:
         data=rt32comm.getCurrentContinuousCorrections()
-        of=os.path.join(cfg['DATA']['pointing_data_dir'],cfg['DATA']['pointing_data_file'])
-        with open(of,'a') as f:
-            now=datetime.datetime.utcnow()
-            s='{} {} {}\n'.format(
-                datetime.datetime.strftime(now,'%Y-%m-%dT%H:%M:%S'),
+        if data:
+            of=os.path.join(cfg['DATA']['pointing_data_dir'],cfg['DATA']['pointing_data_file'])
+            pointingCorrections.saveContinuousCorrections(
+                of, 
                 data['cont_dZD'],
                 data['cont_dxElev'])
-            f.write(s)
-        logger.info('stats saved to {}'.format(of))
+            logger.info('stats saved to {}'.format(of))
         # logger.info('Actual continuous corrections xZD [deg]: {}'.format(data['cont_dxElev']))
 
     
@@ -66,8 +64,8 @@ def main(argv=None): # IGNORE:C0111
         dZD,dxZD=pointingCorrections.get_median_corrections(args,cfg)
         # data=rt32comm.getCurrentContinuousCorrections()
         # print(data)
-        logger.info('Continuous corrections for RT32 ZD: {:.4f}'.format(dZD*10000))
-        logger.info('Continuous corrections for RT32 xZD: {:.4f}'.format(dxZD*10000))
+        logger.info('Continuous corrections for RT32 ZD: {:.0f}'.format(dZD*10000))
+        logger.info('Continuous corrections for RT32 xZD: {:.0f}'.format(dxZD*10000))
         # logger.info('Actual continuous corrections xZD [deg]: {}'.format(data['cont_dxElev']))
             
     if args.test_rt32_comm:
@@ -83,6 +81,11 @@ def main(argv=None): # IGNORE:C0111
             corr=int(dZD*10000)
             sendZDoffset(corr, cfg)
             logger.info("new continuous ZD correction: {}".format(corr))
+            # of=os.path.join(cfg['DATA']['pointing_data_dir'],cfg['DATA']['pointing_data_file'])
+            # pointingCorrections.saveContinuousCorrections(
+            #     of, 
+            #     data['cont_dZD'],
+            #     data['cont_dxElev'])
         except ValueError:
             logger.info("Could not set ZD correction")
             pass

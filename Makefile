@@ -51,3 +51,6 @@ send_zed_to_rt4:
 
 zed: dw_data send_zed_to_rt4
 
+calc_median:
+	source ${VENV}/bin/activate && continuousZed.py --median
+

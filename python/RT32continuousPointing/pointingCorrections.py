@@ -98,14 +98,21 @@ class fastScanCorrections():
         returns tuple of median cross-elevation and median ZD corrections
         '''
         return np.median(self.dCrossElev),np.median(self.dZD)
+
+    def get_std(self):
+        '''
+        returns tuple of std of cross-elevation and std pf ZD corrections
+        '''
+        return np.std(self.dCrossElev),np.std(self.dZD)
         
     def __repr__(self):
         # return ''.join(self.pointing_data)
         mCrossElev,mdZD=self.get_median()
+        sCrossElev,sdZD=self.get_std()
         s='Data file: {}\n'.format(self.path)
         s+='Pointing observations: {}\n'.format(len(self.dCrossElev))
-        s+='Median ZD correction [mdeg]: {}\n'.format(mdZD*1000)
-        s+='Median cross-elevation correction [mdeg]: {}\n'.format(mCrossElev*1000)
+        s+='Median ZD correction [mdeg]: {} (sigma: {:.1f})\n'.format(mdZD*1000,sdZD*1000)
+        s+='Median cross-elevation correction [mdeg]: {} (sigma: {:.1f})\n'.format(mCrossElev*1000,sCrossElev*1000)
         return s
     
     def __str__(self):

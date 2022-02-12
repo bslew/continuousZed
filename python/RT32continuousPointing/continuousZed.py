@@ -61,7 +61,7 @@ def main(argv=None): # IGNORE:C0111
 
     
     if args.median:
-        dZD,dxZD=pointingCorrections.get_median_corrections(args,cfg)
+        dxZD,dZD=pointingCorrections.get_median_corrections(args,cfg)
         # data=rt32comm.getCurrentContinuousCorrections()
         # print(data)
         logger.info('Continuous corrections for RT32 ZD: {:.0f}'.format(dZD*10000))

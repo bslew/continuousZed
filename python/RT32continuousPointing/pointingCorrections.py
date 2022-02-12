@@ -132,7 +132,8 @@ def get_median_corrections(args,cfg):
         
     returns
     -------
-        median pointing correction [deg]
+        tuple median pointing correction in cross-zenith-distance and zenith distance [deg]  
+        (dxZD,dZD)
     '''
     f=os.path.join(cfg['DATA']['cross_scan_data_dir'],cfg['DATA']['cross_scan_data_file'])
     tmscale=cfg.getint('ZED','time_scale')

@@ -1,6 +1,6 @@
 PROG=continuousZed
 SHELL=/bin/bash
-
+VERB=
 VENV=venv
 
 #check_dir:
@@ -14,6 +14,7 @@ install:
 	@echo "Installing scripts"
 #	install sh/continuousZed venv/bin/
 	install sh/continuousZed ${HOME}/bin/
+	install sh/getRT32_ROH_data ${HOME}/bin/
 
 	@echo "Installing config file"
 	-mkdir -p $(HOME)/.config/${PROG}/
@@ -35,11 +36,16 @@ help:
 	@echo ""
 
 dw_data:
-	-mkdir data
+	-mkdir data data.bak
+	cp data/*.off data/*.txt data.bak
 	-scp oper@annaring:/home/oper/scan/FastScan_5.00.off data
 	-scp oper@annaring:/home/oper/scan/FastScan_6.70.off data
 	-scp oper@annaring:/home/oper/scan/FastScan_12.00.off data
 	-scp oper@annaring:/home/oper/scan/FastScan_22.00.off data
+	-cat data/FastScan_5.00.off | sed -e '/^#/d' | wc -l
+	-cat data/FastScan_6.70.off | sed -e '/^#/d' | wc -l
+	-cat data/FastScan_12.00.off | sed -e '/^#/d' | wc -l
+	-cat data/FastScan_22.00.off | sed -e '/^#/d' | wc -l
 
 	-scp rt32time@galaxy:~/continuousZed/data/continuous_corrections.txt data
 
@@ -52,5 +58,5 @@ send_zed_to_rt4:
 zed: dw_data send_zed_to_rt4
 
 calc_median:
-	source ${VENV}/bin/activate && continuousZed.py --median
+	source ${VENV}/bin/activate && continuousZed.py --median ${VERB}
 

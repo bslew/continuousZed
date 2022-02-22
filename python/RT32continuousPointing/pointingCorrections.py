@@ -36,6 +36,10 @@ class fastScanCorrections():
 
         self.process_data()
         
+        self.verbose=0
+        if 'verbose' in kwargs.keys():
+            self.verbose=kwargs['verbose']
+    
     def get_dt(self):
         return self.dt
     
@@ -107,6 +111,9 @@ class fastScanCorrections():
         
     def __repr__(self):
         # return ''.join(self.pointing_data)
+        if self.verbose>1:
+            for c1,c2 in zip(self.dCrossElev,self.dZD):
+                print('dxZD: {:.1f}, dZD: {:.1f}'.format(c1*10000,c2*10000))
         mCrossElev,mdZD=self.get_median()
         sCrossElev,sdZD=self.get_std()
         s='Data file: {}\n'.format(self.path)
@@ -135,9 +142,20 @@ def get_median_corrections(args,cfg):
         tuple median pointing correction in cross-zenith-distance and zenith distance [deg]  
         (dxZD,dZD)
     '''
+    correction_freq=['5','6_7','12']
+    # correction_files='cross_scan_data_file'+correction_freq
+    for freq in correction_freq:
+        f=os.path.join(cfg['DATA']['cross_scan_data_dir'],cfg['DATA']['cross_scan_data_file'+freq])
+        tmscale=cfg.getint('ZED','time_scale')
+        P=fastScanCorrections(f,tmscale=tmscale, verbose=args.verbose)
+        print('Pointing corrections '+freq)
+        print(P)
+
+    
+    print('-----------------')    
     f=os.path.join(cfg['DATA']['cross_scan_data_dir'],cfg['DATA']['cross_scan_data_file'])
     tmscale=cfg.getint('ZED','time_scale')
-    P=fastScanCorrections(f,tmscale=tmscale)
+    P=fastScanCorrections(f,tmscale=tmscale, verbose=args.verbose)
     print('Pointing corrections ')
     print(P)
 

@@ -57,6 +57,9 @@ def main(argv=None): # IGNORE:C0111
                 data['cont_dZD'],
                 data['cont_dxElev'])
             logger.info('stats saved to {}'.format(of))
+            of=os.path.join(cfg['DATA']['pointing_data_dir'],cfg['DATA']['RT32pointing_data_file']+'.csv')
+            pointingCorrections.saveRT32pointingData(of,data)
+            logger.info('stats saved to {}'.format(of))
         # logger.info('Actual continuous corrections xZD [deg]: {}'.format(data['cont_dxElev']))
 
     

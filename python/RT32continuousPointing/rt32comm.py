@@ -63,8 +63,10 @@ def getCurrentContinuousCorrections(host='192.168.1.4',port=33033,ans_host='192.
         pointing_stats={}
         for kv in dstr.split(','):
             k,v=kv.split('=')
-            pointing_stats[k]=v
+            pointing_stats[k]=v.strip()
     except OSError:
         print('cound not get current continuous corrections from RT32')
         return None
     return pointing_stats
+
+

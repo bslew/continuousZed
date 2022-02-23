@@ -57,13 +57,13 @@ def main(argv=None): # IGNORE:C0111
     if args.logRT32stats:
         data=rt32comm.getCurrentContinuousCorrections()
         if data:
-            of=os.path.join(cfg['DATA']['pointing_data_dir'],cfg['DATA']['cont_corr_data_file'])
+            of=os.path.join(cfg['DATA']['data_dir'],cfg['DATA']['cont_corr_data_file'])
             pointingCorrections.saveContinuousCorrections(
                 of, 
                 data['cont_dZD'],
                 data['cont_dxElev'])
             logger.info('stats saved to {}'.format(of))
-            of=os.path.join(cfg['DATA']['pointing_data_dir'],cfg['DATA']['RT32pointing_data_file']+'.csv')
+            of=os.path.join(cfg['DATA']['data_dir'],cfg['DATA']['RT32pointing_data_file']+'.csv')
             pointingCorrections.saveRT32pointingData(of,data)
             # logger.info('stats saved to {}'.format(of))
         # logger.info('Actual continuous corrections xZD [deg]: {}'.format(data['cont_dxElev']))

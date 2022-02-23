@@ -35,7 +35,9 @@ help:
 	@echo ""
 	@echo ""
 
-dw_data:
+dw_data: dw_crossscan_data dw_rt4_data
+
+dw_crossscan_data:
 	-mkdir data data.bak
 	cp data/*.off data/*.txt data.bak
 	-scp oper@annaring:/home/oper/scan/FastScan_5.00.off data
@@ -47,6 +49,7 @@ dw_data:
 	-cat data/FastScan_12.00.off | sed -e '/^#/d' | wc -l
 	-cat data/FastScan_22.00.off | sed -e '/^#/d' | wc -l
 
+dw_rt4_data:
 	-scp rt32time@galaxy:~/continuousZed/data/continuous_corrections.txt data
 	-scp rt32time@galaxy:~/continuousZed/data/ROH.? data
 
@@ -57,7 +60,7 @@ send_zed_to_rt4:
 	source ${VENV}/bin/activate && continuousZed.py --set_dZD_auto
 	source ${VENV}/bin/activate && continuousZed.py --set_dxZD_auto
 
-zed: dw_data send_zed_to_rt4
+zed: dw_pointing_data send_zed_to_rt4
 
 calc_median:
 	source ${VENV}/bin/activate && continuousZed.py --median ${VERB}

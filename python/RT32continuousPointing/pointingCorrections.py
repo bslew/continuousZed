@@ -10,6 +10,7 @@ import datetime
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy import interpolate
+import pandas as pd
 
 class fastScanCorrections():
     '''
@@ -180,6 +181,19 @@ def plot_corrections(P):
     plt.legend()
     plt.show()
     
+def saveRT32pointingData(fname, kv : dict):
+    '''
+    Save RT32 control system pointing corrections dictionary to file.
+    '''
+    of=fname
+    now=datetime.datetime.utcnow()
+    now_str=datetime.datetime.strftime(now,'%Y-%m-%dT%H:%M:%S')
+    kv['dt']=now_str
+    for k,v in kv.items():
+        kv[k]=list([v])
+    print(kv)
+    df=pd.DataFrame.from_dict(kv)
+    df.to_csv(of, mode='a', header=not os.path.isfile(of),index=False)
     
     
 def saveContinuousCorrections(fname, dZD, dxZD):

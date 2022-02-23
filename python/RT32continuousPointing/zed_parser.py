@@ -66,6 +66,9 @@ USAGE
         parser.add_argument('--set_dZD_auto', action='store_true',
                             help='calculate median ZD correction and send the result to RT-32 control system [default: %(default)s]', 
                             default=False)
+        parser.add_argument('--set_dxZD_auto', action='store_true',
+                            help='calculate median xZD correction and send the result to RT-32 control system [default: %(default)s]', 
+                            default=False)
 
         parser.add_argument('--logRT32stats', action='store_true',
                             help='request and store RT-32 control system pointing settings [default: %(default)s]', 

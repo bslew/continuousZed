@@ -55,6 +55,7 @@ cat_data:
 
 send_zed_to_rt4:
 	source ${VENV}/bin/activate && continuousZed.py --set_dZD_auto
+	source ${VENV}/bin/activate && continuousZed.py --set_dxZD_auto
 
 zed: dw_data send_zed_to_rt4
 

@@ -98,6 +98,20 @@ def main(argv=None): # IGNORE:C0111
         except ValueError:
             logger.info("Could not set ZD correction")
             pass
+    if args.set_dxZD_auto:
+        try:
+            dxZD,_=pointingCorrections.get_median_corrections(args,cfg)
+            corr=int(dxZD*10000)
+            sendxZDoffset(corr, cfg)
+            logger.info("new continuous xZD correction: {}".format(corr))
+            # of=os.path.join(cfg['DATA']['pointing_data_dir'],cfg['DATA']['cont_corr_data_file'])
+            # pointingCorrections.saveContinuousCorrections(
+            #     of, 
+            #     data['cont_dZD'],
+            #     data['cont_dxElev'])
+        except ValueError:
+            logger.info("Could not set xZD correction")
+            pass
         
     if args.set_dZD!='':
         try:

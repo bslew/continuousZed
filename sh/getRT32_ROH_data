@@ -1,10 +1,25 @@
 #!/bin/bash
+
+function storeROH {
+	echo `date -u +%Y-%m-%dT%H:%M:%S`" "`ssh -oKexAlgorithms=+diffie-hellman-group1-sha1 oper@rt4.astro.int -C cat /home/oper/rt4_control/rt4_linux/DATA/$1.ROH` >> data/ROH.$1
+	cat data/ROH.$1 | uniq -f 1 > data/tmp
+	mv data/tmp data/ROH.$1
+}
+
 #cd $HOME/continuousZed
+
+storeROH C
+storeROH M
+storeROH X
+storeROH K
+
+
+
 # fetch ROH C
-echo `date -u +%Y-%m-%dT%H:%M:%S`" "`ssh -oKexAlgorithms=+diffie-hellman-group1-sha1 oper@rt4.astro.int -C cat /home/oper/rt4_control/rt4_linux/DATA/C.ROH` >> data/ROH.C
+#echo `date -u +%Y-%m-%dT%H:%M:%S`" "`ssh -oKexAlgorithms=+diffie-hellman-group1-sha1 oper@rt4.astro.int -C cat /home/oper/rt4_control/rt4_linux/DATA/C.ROH` >> data/ROH.C
 # fetch ROH M
-echo `date -u +%Y-%m-%dT%H:%M:%S`" "`ssh -oKexAlgorithms=+diffie-hellman-group1-sha1 oper@rt4.astro.int -C cat /home/oper/rt4_control/rt4_linux/DATA/M.ROH` >> data/ROH.M
+#echo `date -u +%Y-%m-%dT%H:%M:%S`" "`ssh -oKexAlgorithms=+diffie-hellman-group1-sha1 oper@rt4.astro.int -C cat /home/oper/rt4_control/rt4_linux/DATA/M.ROH` >> data/ROH.M
 # fetch ROH X
-echo `date -u +%Y-%m-%dT%H:%M:%S`" "`ssh -oKexAlgorithms=+diffie-hellman-group1-sha1 oper@rt4.astro.int -C cat /home/oper/rt4_control/rt4_linux/DATA/X.ROH` >> data/ROH.X
+#echo `date -u +%Y-%m-%dT%H:%M:%S`" "`ssh -oKexAlgorithms=+diffie-hellman-group1-sha1 oper@rt4.astro.int -C cat /home/oper/rt4_control/rt4_linux/DATA/X.ROH` >> data/ROH.X
 # fetch ROH K
-echo `date -u +%Y-%m-%dT%H:%M:%S`" "`ssh -oKexAlgorithms=+diffie-hellman-group1-sha1 oper@rt4.astro.int -C cat /home/oper/rt4_control/rt4_linux/DATA/K.ROH` >> data/ROH.K
+#echo `date -u +%Y-%m-%dT%H:%M:%S`" "`ssh -oKexAlgorithms=+diffie-hellman-group1-sha1 oper@rt4.astro.int -C cat /home/oper/rt4_control/rt4_linux/DATA/K.ROH` >> data/ROH.K

@@ -197,14 +197,38 @@ def saveRT32pointingData(fname, kv : dict):
     
     
 def saveContinuousCorrections(fname, dZD, dxZD):
+    '''
+    save continuous corrections if they have changed since the last save
+    '''
     of=fname
-    with open(of,'a') as f:
-        now=datetime.datetime.utcnow()
-        s='{} {} {}\n'.format(
-            datetime.datetime.strftime(now,'%Y-%m-%dT%H:%M:%S'),
-            dxZD,
-            dZD)
-        f.write(s)
+    
+    '''
+    read last entry
+    '''
+    last_line=None
+    try:
+        with open(of,'r') as f:
+            last_line=f.readlines()[-1]
+    except:
+        pass
+    
+    last_cont_corr=(0,0)
+    if last_line:
+        try:
+            last_cont_corr=last_line.split()[1:]
+        except:
+            last_cont_corr=(0,0)
+            pass
+    print('last_cont_corr:',last_cont_corr)
+    
+    if (float(dxZD),float(dZD))!=tuple([float(c) for c in last_cont_corr]):
+        with open(of,'a') as f:
+            now=datetime.datetime.utcnow()
+            s='{} {} {}\n'.format(
+                datetime.datetime.strftime(now,'%Y-%m-%dT%H:%M:%S'),
+                dxZD,
+                dZD)
+            f.write(s)
     
 
 class continuousCorrections():

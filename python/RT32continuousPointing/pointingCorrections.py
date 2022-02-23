@@ -202,8 +202,8 @@ def saveContinuousCorrections(fname, dZD, dxZD):
         now=datetime.datetime.utcnow()
         s='{} {} {}\n'.format(
             datetime.datetime.strftime(now,'%Y-%m-%dT%H:%M:%S'),
-            dZD,
-            dxZD)
+            dxZD,
+            dZD)
         f.write(s)
     
 
@@ -220,8 +220,8 @@ class continuousCorrections():
         self.dt=[ datetime.datetime.strptime(x, '%Y-%m-%dT%H:%M:%S') for x in self.temp[:,0] ]
         self.dt0=self.dt[0]
         self.x=[(dt-self.dt0).total_seconds() for dt in self.dt]
-        self.dZD=np.array(self.temp[:,1],dtype=float)
-        self.dxZD=np.array(self.temp[:,2],dtype=float)
+        self.dZD=np.array(self.temp[:,2],dtype=float)
+        self.dxZD=np.array(self.temp[:,1],dtype=float)
         self.val_inter_dZD=interpolate.interp1d(self.x,self.dZD,fill_value="extrapolate", kind='previous')
         self.val_inter_dxZD=interpolate.interp1d(self.x,self.dxZD,fill_value="extrapolate", kind='previous')
     def toX(self,dt : list):

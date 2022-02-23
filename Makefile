@@ -48,6 +48,7 @@ dw_data:
 	-cat data/FastScan_22.00.off | sed -e '/^#/d' | wc -l
 
 	-scp rt32time@galaxy:~/continuousZed/data/continuous_corrections.txt data
+	-scp rt32time@galaxy:~/continuousZed/data/ROH.? data
 
 cat_data:
 	more data/FastScan_*.off

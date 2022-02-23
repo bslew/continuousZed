@@ -34,6 +34,12 @@ def sendZDoffset(corr,cfg):
         port=cfg.getint('RT32','port'),
         ).send_cmd('flagM -10 %i' % corr)
     
+def sendxZDoffset(corr,cfg):
+    print("Sending RT-32 xZD pointing correction [10^-4 deg]: {}".format(corr))
+    rt32comm.rt32tcpclient().connectRT4(
+        host=cfg['RT32']['host'],
+        port=cfg.getint('RT32','port'),
+        ).send_cmd('flagM -12 %i' % corr)
 
 def main(argv=None): # IGNORE:C0111
     '''Command line options.'''
@@ -51,7 +57,7 @@ def main(argv=None): # IGNORE:C0111
     if args.logRT32stats:
         data=rt32comm.getCurrentContinuousCorrections()
         if data:
-            of=os.path.join(cfg['DATA']['pointing_data_dir'],cfg['DATA']['pointing_data_file'])
+            of=os.path.join(cfg['DATA']['pointing_data_dir'],cfg['DATA']['cont_corr_data_file'])
             pointingCorrections.saveContinuousCorrections(
                 of, 
                 data['cont_dZD'],
@@ -59,7 +65,7 @@ def main(argv=None): # IGNORE:C0111
             logger.info('stats saved to {}'.format(of))
             of=os.path.join(cfg['DATA']['pointing_data_dir'],cfg['DATA']['RT32pointing_data_file']+'.csv')
             pointingCorrections.saveRT32pointingData(of,data)
-            logger.info('stats saved to {}'.format(of))
+            # logger.info('stats saved to {}'.format(of))
         # logger.info('Actual continuous corrections xZD [deg]: {}'.format(data['cont_dxElev']))
 
     
@@ -84,7 +90,7 @@ def main(argv=None): # IGNORE:C0111
             corr=int(dZD*10000)
             sendZDoffset(corr, cfg)
             logger.info("new continuous ZD correction: {}".format(corr))
-            # of=os.path.join(cfg['DATA']['pointing_data_dir'],cfg['DATA']['pointing_data_file'])
+            # of=os.path.join(cfg['DATA']['pointing_data_dir'],cfg['DATA']['cont_corr_data_file'])
             # pointingCorrections.saveContinuousCorrections(
             #     of, 
             #     data['cont_dZD'],
@@ -101,6 +107,15 @@ def main(argv=None): # IGNORE:C0111
             logger.info("new continuous ZD correction: {}".format(corr))
         except ValueError:
             logger.info("Could not set ZD correction")
+            pass
+    if args.set_dxZD!='':
+        try:
+            dxZD=float(args.set_dxZD)
+            corr=int(dxZD*10000) # convert from deg to 1e-4deg
+            sendxZDoffset(corr, cfg)
+            logger.info("new continuous xZD correction: {}".format(corr))
+        except ValueError:
+            logger.info("Could not set xZD correction")
             pass
         
         

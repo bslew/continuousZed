@@ -72,7 +72,10 @@ USAGE
                             default=False)
 
         parser.add_argument('--set_dZD', type=str,
-                            help='send ZD correction to RT-32 control system (units: deg) [default: %(default)s]', 
+                            help='send ZD continuous correction to RT-32 control system (units: deg) [default: %(default)s]', 
+                            default='')
+        parser.add_argument('--set_dxZD', type=str,
+                            help='send xZD continuous correction to RT-32 control system (units: deg) [default: %(default)s]', 
                             default='')
         
         parser.add_argument('--plot', action='store_true',

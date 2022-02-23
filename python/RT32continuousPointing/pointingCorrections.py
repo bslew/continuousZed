@@ -30,6 +30,7 @@ class fastScanCorrections():
 
         
         self.pointing_data=[]
+        self.cont_corrections=None
         self.dZD=[]
         self.time_offset=90
         if 'tmscale' in kwargs.keys():
@@ -69,11 +70,32 @@ class fastScanCorrections():
         '''
         extract dAZ*sin(ZD)
         '''
-        self.dCrossElev=np.array([ float(x[6])*np.sin(float(x[11])*np.pi/180) for x in self.pointing_data],dtype=float)
+        self.dxZD=np.array([ float(x[6])*np.sin(float(x[11])*np.pi/180) for x in self.pointing_data],dtype=float)
 
-    def addZDofset(self,offset):
+    def addZDoffset(self,offset):
         self.dZD+=offset
         return self
+
+    def addxZDoffset(self,offset):
+        self.dxZD+=offset
+        return self
+        
+
+    def subContinuousCorrections(self,contcorr):
+        '''
+        subtract continuous corrections using their use history as 
+        modeled by contcorr interpolation object
+        
+        TODO: make this smarter...
+        '''
+        cont=contcorr(self.dt)
+        self.cont_corrections=cont
+        # print(self.dt)
+        if self.verbose>1:
+            print(cont)
+        self.dZD=[x-c for x,c in zip(self.dZD,cont[0])]
+        self.dxZD=[x-c for x,c in zip(self.dxZD,cont[1])]
+        
     
     def addContinuousCorrections(self,contcorr):
         '''
@@ -81,46 +103,72 @@ class fastScanCorrections():
         modeled by contcorr interpolation object
         '''
         cont=contcorr(self.dt)
+        self.cont_corrections=cont
         # print(self.dt)
-        # print(cont)
+        if self.verbose>1:
+            print(cont)
         self.dZD=[x+c for x,c in zip(self.dZD,cont[0])]
-        self.dCrossElev=[x+c for x,c in zip(self.dCrossElev,cont[1])]
+        self.dxZD=[x+c for x,c in zip(self.dxZD,cont[1])]
 
     def addZDoffsetAfter(self,dtstr,offset,fmt='%Y-%m-%d %H:%M:%S'):
         dt=datetime.datetime.strptime(dtstr,fmt)
-        print(dt)
+        if self.verbose>1:
+            print(dt)
         off=lambda x,t,off: x+off if t>dt else x
         if isinstance(offset,float):    
                 self.dZD=[ off(x,t,offset) for x,t in zip(self.dZD,self.dt) ]
         else:
                 self.dZD=[ off(x,t,o) for x,t,o in zip(self.dZD,self.dt,offset) ]
-        print(len(self.dZD))
-        print(len(self.dt))
+        if self.verbose>1:
+            print(len(self.dZD))
+            print(len(self.dt))
         
     
     def get_median(self):
         '''
         returns tuple of median cross-elevation and median ZD corrections
         '''
-        return np.median(self.dCrossElev),np.median(self.dZD)
+        return np.median(self.dxZD),np.median(self.dZD)
 
     def get_std(self):
         '''
         returns tuple of std of cross-elevation and std pf ZD corrections
         '''
-        return np.std(self.dCrossElev),np.std(self.dZD)
+        return np.std(self.dxZD),np.std(self.dZD)
         
+    # def get_cont_corrections(self):
+    #     '''
+    #     returns a continuous corrections as a tuple even it it was not loaded
+    #     In such case (0,0) corrections are returned
+    #     '''
+    #     if self.cont_corrections:
+    #         return self.cont_corrections
+    #     return (0.,0.)
+    
     def __repr__(self):
         # return ''.join(self.pointing_data)
+        
         if self.verbose>1:
-            for c1,c2 in zip(self.dCrossElev,self.dZD):
-                print('dxZD: {:.1f}, dZD: {:.1f}'.format(c1*10000,c2*10000))
+            for i,(c1,c2) in enumerate(zip(self.dxZD,self.dZD)):
+                if self.cont_corrections:
+                    print('dxZD: {:.1f}, dZD: {:.1f}, cont.dxZD: {:.1f}, cont.dZD: {:.1f}, dt: {}'.format(
+                        c1*10000,c2*10000,
+                        self.cont_corrections[1][i]*10000,
+                        self.cont_corrections[0][i]*10000,
+                        self.dt[i],
+                        ))
+                else:
+                    print('dxZD: {:.1f}, dZD: {:.1f}, dt: {}'.format(
+                        c1*10000,c2*10000,
+                        self.dt[i],
+                        ))
+                    
         mCrossElev,mdZD=self.get_median()
         sCrossElev,sdZD=self.get_std()
         s='Data file: {}\n'.format(self.path)
-        s+='Pointing observations: {}\n'.format(len(self.dCrossElev))
-        s+='Median ZD correction [mdeg]: {} (sigma: {:.1f})\n'.format(mdZD*1000,sdZD*1000)
-        s+='Median cross-elevation correction [mdeg]: {} (sigma: {:.1f})\n'.format(mCrossElev*1000,sCrossElev*1000)
+        s+='Pointing observations: {}\n'.format(len(self.dxZD))
+        s+='Median ZD correction [mdeg]: {:.1f} (sigma: {:.1f})\n'.format(mdZD*1000,sdZD*1000)
+        s+='Median cross-elevation correction [mdeg]: {:.1f} (sigma: {:.1f})\n'.format(mCrossElev*1000,sCrossElev*1000)
         return s
     
     def __str__(self):
@@ -143,27 +191,49 @@ def get_median_corrections(args,cfg):
         tuple median pointing correction in cross-zenith-distance and zenith distance [deg]  
         (dxZD,dZD)
     '''
-    correction_freq=['5','6_7','12']
+    correction_freq=['5','12','6_7']
+    recName=['C','X','M']
     # correction_files='cross_scan_data_file'+correction_freq
-    for freq in correction_freq:
-        f=os.path.join(cfg['DATA']['cross_scan_data_dir'],cfg['DATA']['cross_scan_data_file'+freq])
+    
+    for i,freq in enumerate(correction_freq):
+        print('-----------------')    
+        print('Receiver: {}'.format(recName[i]))
+        f=os.path.join(cfg['DATA']['data_dir'],cfg['DATA']['cross_scan_data_file'+freq])
         tmscale=cfg.getint('ZED','time_scale')
         P=fastScanCorrections(f,tmscale=tmscale, verbose=args.verbose)
-        print('Pointing corrections '+freq)
+        print('Time scale: last {} days'.format(tmscale))
+        print('Frequency [GHz]: '+freq)
         print(P)
 
-    
-    print('-----------------')    
-    f=os.path.join(cfg['DATA']['cross_scan_data_dir'],cfg['DATA']['cross_scan_data_file'])
-    tmscale=cfg.getint('ZED','time_scale')
-    P=fastScanCorrections(f,tmscale=tmscale, verbose=args.verbose)
-    print('Pointing corrections ')
-    print(P)
+        f=os.path.join(cfg['DATA']['data_dir'],cfg[recName[i]]['roh_hist'])
+        rohCorr=continuousCorrections(f)
+        P.addContinuousCorrections(rohCorr)
+        rZD,rxZD=rohCorr.last()
+        P.addxZDoffset(-rxZD)
+        P.addZDoffset(-rZD)
+        print('Pointing corrections (unified to current roh epoch)')
+        print(P)
 
-    f=os.path.join(cfg['DATA']['pointing_data_dir'],cfg['DATA']['pointing_data_file'])
-    contCorr=continuousCorrections(f)
+
+        f=os.path.join(cfg['DATA']['data_dir'],cfg['DATA']['cont_corr_data_file'])
+        contCorr=continuousCorrections(f)
+        P.addContinuousCorrections(contCorr)
+        print('Continuous corrections')
+        print(P)
+        print('-----------------')    
+
+
     
-    P.addContinuousCorrections(contCorr)
+    # print('-----------------')    
+    # f=os.path.join(cfg['DATA']['data_dir'],cfg['DATA']['cross_scan_data_file'])
+    # tmscale=cfg.getint('ZED','time_scale')
+    # P=fastScanCorrections(f,tmscale=tmscale, verbose=args.verbose)
+    # print('Pointing corrections ')
+    # print(P)
+    #
+    # f=os.path.join(cfg['DATA']['data_dir'],cfg['DATA']['cont_corr_data_file'])
+    # contCorr=continuousCorrections(f)
+    # P.addContinuousCorrections(contCorr)
     print('Continuous corrections')
     print(P)
     mCrossElev,mdZD=P.get_median()
@@ -219,7 +289,7 @@ def saveContinuousCorrections(fname, dZD, dxZD):
         except:
             last_cont_corr=(0,0)
             pass
-    print('last_cont_corr:',last_cont_corr)
+    # print('last_cont_corr:',last_cont_corr)
     
     if (float(dxZD),float(dZD))!=tuple([float(c) for c in last_cont_corr]):
         with open(of,'a') as f:
@@ -241,6 +311,10 @@ class continuousCorrections():
         self.in_file=in_file
         
         self.temp=np.loadtxt(in_file, dtype=str)
+        self.temp=self.temp.reshape((-1,3))
+        if len(self.temp)==1:
+            self.temp=np.vstack([self.temp[0],self.temp[0]])
+            self.temp[0,0]='2020-01-01T00:00:00'
         self.dt=[ datetime.datetime.strptime(x, '%Y-%m-%dT%H:%M:%S') for x in self.temp[:,0] ]
         self.dt0=self.dt[0]
         self.x=[(dt-self.dt0).total_seconds() for dt in self.dt]
@@ -251,6 +325,15 @@ class continuousCorrections():
     def toX(self,dt : list):
         return [(x-self.dt0).total_seconds() for x in dt ]
     
+    def last(self) -> tuple:
+        '''
+        return last known correction
+        returns
+        -------
+            tuple(dZD,dxZD)
+        '''
+        return self.dZD[-1],self.dxZD[-1]
+        
     def __call__(self,dt : list):    
         '''
         calculate continuous corrections used up to given datetime

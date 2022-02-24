@@ -36,6 +36,15 @@ class fastScanCorrections():
         if 'tmscale' in kwargs.keys():
             self.time_offset=kwargs['tmscale']
 
+        self.start_time=None
+        if 'start_time' in kwargs.keys():
+            if kwargs['start_time']!=None:
+                self.start_time=datetime.datetime.strptime(kwargs['start_time'],'%Y-%m-%d %H:%M:%S')
+        self.end_time=None
+        if 'end_time' in kwargs.keys():
+            if kwargs['end_time']!=None:
+                self.end_time=datetime.datetime.strptime(kwargs['end_time'],'%Y-%m-%d %H:%M:%S')
+
         self.process_data()
         
         self.verbose=0
@@ -48,6 +57,13 @@ class fastScanCorrections():
     def process_data(self):
         tdelta=datetime.timedelta(days=self.time_offset)
         dt0=datetime.datetime.utcnow()-tdelta
+        dt1=datetime.datetime.utcnow()
+        if self.start_time:
+            if self.start_time>dt0:
+                dt0=self.start_time
+        if self.end_time:
+            if self.end_time<dt1:
+                dt1=self.end_time
         
         pointing_data=[ re.sub(',','',x).split(' ') for x in self.data 
                        if (len(x.split(' '))==13 and x[0]!='#') ]
@@ -59,8 +75,8 @@ class fastScanCorrections():
         select by time
         '''
         
-        self.pointing_data=[ x for x in pointing_data if dt(x)>dt0]
-        self.dt=[ dt(x) for x in pointing_data if dt(x)>dt0]
+        self.pointing_data=[ x for x in pointing_data if dt(x)>dt0 and dt(x)<dt1]
+        self.dt=[ dt(x) for x in pointing_data if dt(x)>dt0 and dt(x)<dt1]
         
         '''
         extract dZD
@@ -151,15 +167,15 @@ class fastScanCorrections():
         if self.verbose>1:
             for i,(c1,c2) in enumerate(zip(self.dxZD,self.dZD)):
                 if self.cont_corrections:
-                    print('dxZD: {:.1f}, dZD: {:.1f}, cont.dxZD: {:.1f}, cont.dZD: {:.1f}, dt: {}'.format(
-                        c1*10000,c2*10000,
-                        self.cont_corrections[1][i]*10000,
-                        self.cont_corrections[0][i]*10000,
+                    print('dxZD: {:.4f}, dZD: {:.4f}, cont.dxZD: {:.4f}, cont.dZD: {:.4f}, dt: {}'.format(
+                        c1,c2,
+                        self.cont_corrections[1][i],
+                        self.cont_corrections[0][i],
                         self.dt[i],
                         ))
                 else:
-                    print('dxZD: {:.1f}, dZD: {:.1f}, dt: {}'.format(
-                        c1*10000,c2*10000,
+                    print('dxZD: {:.4f}, dZD: {:.4f}, dt: {}'.format(
+                        c1,c2,
                         self.dt[i],
                         ))
                     
@@ -195,12 +211,22 @@ def get_median_corrections(args,cfg):
     recName=['C','X','M']
     # correction_files='cross_scan_data_file'+correction_freq
     
+    start_time=None
+    if cfg.has_option('ZED','start_time'):
+        start_time=cfg['ZED']['start_time']
+    end_time=None
+    if cfg.has_option('ZED','end_time'):
+        end_time=cfg['ZED']['end_time']
+    
     for i,freq in enumerate(correction_freq):
         print('-----------------')    
         print('Receiver: {}'.format(recName[i]))
         f=os.path.join(cfg['DATA']['data_dir'],cfg['DATA']['cross_scan_data_file'+freq])
         tmscale=cfg.getint('ZED','time_scale')
-        P=fastScanCorrections(f,tmscale=tmscale, verbose=args.verbose)
+        P=fastScanCorrections(f,tmscale=tmscale, 
+                              start_time=start_time,
+                              end_time=end_time,
+                              verbose=args.verbose)
         print('Time scale: last {} days'.format(tmscale))
         print('Frequency [GHz]: '+freq)
         print(P)

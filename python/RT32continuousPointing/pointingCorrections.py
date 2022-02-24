@@ -207,10 +207,15 @@ def get_median_corrections(args,cfg):
 
         f=os.path.join(cfg['DATA']['data_dir'],cfg[recName[i]]['roh_hist'])
         rohCorr=continuousCorrections(f)
-        P.addContinuousCorrections(rohCorr)
         rZD,rxZD=rohCorr.last()
+        P.addContinuousCorrections(rohCorr)
         P.addxZDoffset(-rxZD)
         P.addZDoffset(-rZD)
+
+        # P.subContinuousCorrections(rohCorr)
+        # P.addxZDoffset(rxZD)
+        # P.addZDoffset(rZD)
+
         print('Pointing corrections (unified to current roh epoch)')
         print(P)
 
@@ -234,8 +239,8 @@ def get_median_corrections(args,cfg):
     # f=os.path.join(cfg['DATA']['data_dir'],cfg['DATA']['cont_corr_data_file'])
     # contCorr=continuousCorrections(f)
     # P.addContinuousCorrections(contCorr)
-    print('Continuous corrections')
-    print(P)
+    # print('Continuous corrections')
+    # print(P)
     mCrossElev,mdZD=P.get_median()
 
     if args.plot:

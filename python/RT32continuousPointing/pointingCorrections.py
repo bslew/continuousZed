@@ -13,6 +13,7 @@ import matplotlib.dates as mdates
 from scipy import interpolate
 import pandas as pd
 from RT32continuousPointing import confidenceRange
+import pickle
 
 
 class fastScanCorrections():
@@ -105,6 +106,9 @@ class fastScanCorrections():
         '''
         # if self.verbose>1:
         
+        stats={}
+        
+        
         '''
         cross ZD corrections vs time
         '''
@@ -121,11 +125,21 @@ class fastScanCorrections():
         
         #plot annotations
         m=np.median(y)
+        stats['Nobs']=len(x)
+        stats['dt_start']=x[0]
+        stats['dt_end']=x[-1]
+        stats['dxZD']={}
+        stats['dxZD']['median']='%.2f' % m
+        stats['dxZD']['sigma']='%.2f' % y.std()
+
+        
         plt.axhline(np.median(y),lw=2,c='k')
         plt.annotate('median={:.1f} mdeg'.format(m),xy=(0.01,0.01), xycoords=('axes fraction','axes fraction'), fontsize=12)
         l,h=np.array(confidenceRange.confidenceRange(y).getTwoSidedTwoSigmaConfidenceRange())
+        stats['dxZD']['1sigma']=(l,h)
         plt.axhspan(l,h,alpha=0.2, color='green')
         l,h=np.array(confidenceRange.confidenceRange(y).getTwoSidedOneSigmaConfidenceRange())
+        stats['dxZD']['2sigma']=(l,h)
         plt.axhspan(l,h,alpha=0.2, color='green')
         # plt.annotate('95% CR',xy=(0.02,(m+h)/2), xycoords=('axes fraction','data'), fontsize=15)
         
@@ -144,12 +158,18 @@ class fastScanCorrections():
 
         #plot annotations
         m=np.median(y)
+        stats['dZD']={}
+        stats['dZD']['median']='%.2f' % m
+        stats['dZD']['sigma']='%.2f' % y.std()
+
         plt.axhline(m,lw=2,c='k')
         # plt.annotate('median={:.1f}'.format(m),xy=(0.01,0.01), xycoords=('axes fraction','data'))
         plt.annotate('median={:.1f} mdeg'.format(m),xy=(0.01,0.01), xycoords=('axes fraction','axes fraction'), fontsize=12)
         l,h=np.array(confidenceRange.confidenceRange(y).getTwoSidedTwoSigmaConfidenceRange())
+        stats['dZD']['1sigma']=(l,h)
         plt.axhspan(l,h,alpha=0.2, color='green')
         l,h=np.array(confidenceRange.confidenceRange(y).getTwoSidedOneSigmaConfidenceRange())
+        stats['dZD']['1sigma']=(l,h)
         plt.axhspan(l,h,alpha=0.2, color='green')
         # plt.annotate('95% CR',xy=(0.02,(m+h)/2), xycoords=('axes fraction','data'), fontsize=15)
         
@@ -162,7 +182,7 @@ class fastScanCorrections():
             plt.savefig(outfile)
         # self.
         
-        
+        return stats
 
     def addZDoffset(self,offset):
         self.dZD+=offset
@@ -304,8 +324,9 @@ def get_median_corrections(args,cfg):
     end_time=None
     if cfg.has_option('ZED','end_time'):
         end_time=cfg['ZED']['end_time']
-    
+    stats={}
     for i,rec in enumerate(receivers):
+        stats[rec]={}
         print('-----------------')    
         print('Receiver: {}'.format(rec))
         freq=cfg[rec]['freq']
@@ -333,7 +354,7 @@ def get_median_corrections(args,cfg):
         print('Pointing corrections (unified to current roh epoch)')
         print(P)
         f=os.path.join(cfg['DATA']['data_dir'],'corrections_'+rec+'.'+cfg['DATA']['roh_unified_corrections_file_suffix']+'.jpg')
-        P.stats_plots(receiver=rec,freq=freq,outfile=f)
+        stats[rec]=P.stats_plots(receiver=rec,freq=freq,outfile=f)
         if args.verbose>2:
             plt.show()
         
@@ -346,7 +367,9 @@ def get_median_corrections(args,cfg):
         print(P)
         print('-----------------')    
 
-
+    stats_file=os.path.join(cfg['DATA']['data_dir'],'corrections_stats.'+cfg['DATA']['roh_unified_corrections_file_suffix']+'.pkl')
+    with open(stats_file,'wb') as f:
+        pickle.dump(stats,f)
     
     # print('-----------------')    
     # f=os.path.join(cfg['DATA']['data_dir'],cfg['DATA']['cross_scan_data_file'])

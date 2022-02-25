@@ -9,8 +9,11 @@ import re
 import datetime
 import numpy as np
 import matplotlib.pyplot as plt
+import matplotlib.dates as mdates
 from scipy import interpolate
 import pandas as pd
+from RT32continuousPointing import confidenceRange
+
 
 class fastScanCorrections():
     '''
@@ -70,11 +73,12 @@ class fastScanCorrections():
         
         todtstr=lambda x: '{}-{}-{} {}'.format(x[3],x[2],x[1],x[4])
         dt=lambda x: datetime.datetime.strptime(todtstr(x),'%Y-%m-%d %H:%M:%S')
-        
         '''
         select by time
         '''
-        
+        self.pointing_data_all=pointing_data
+        self.mask=[ dt(x)>dt0 and dt(x)<dt1 for x in pointing_data ]
+
         self.pointing_data=[ x for x in pointing_data if dt(x)>dt0 and dt(x)<dt1]
         self.dt=[ dt(x) for x in pointing_data if dt(x)>dt0 and dt(x)<dt1]
         
@@ -87,6 +91,78 @@ class fastScanCorrections():
         extract dAZ*sin(ZD)
         '''
         self.dxZD=np.array([ float(x[6])*np.sin(float(x[11])*np.pi/180) for x in self.pointing_data],dtype=float)
+
+    def save(self,fname):
+        '''
+        re-assemble the pointing data the save to output file in the format compatible with
+        the input format
+        '''
+        # self.pointing_data_all
+
+
+    def stats_plots(self,receiver='',freq='', outfile=''):
+        '''
+        '''
+        # if self.verbose>1:
+        
+        '''
+        cross ZD corrections vs time
+        '''
+        fig=plt.figure(figsize=(12,8))
+        locator = mdates.AutoDateLocator(minticks=3, maxticks=7)
+        formatter = mdates.ConciseDateFormatter(locator)
+        x=self.dt
+        y=self.dxZD*1000
+        ax1=plt.subplot(211)
+        ax1.xaxis.set_major_locator(locator)
+        ax1.xaxis.set_major_formatter(formatter)
+        lab='receiver: {} ({} GHz)'.format(receiver,freq)
+        plt.plot(x,y,'o-', label=lab)
+        
+        #plot annotations
+        m=np.median(y)
+        plt.axhline(np.median(y),lw=2,c='k')
+        plt.annotate('median={:.1f} mdeg'.format(m),xy=(0.01,0.01), xycoords=('axes fraction','axes fraction'), fontsize=12)
+        l,h=np.array(confidenceRange.confidenceRange(y).getTwoSidedTwoSigmaConfidenceRange())
+        plt.axhspan(l,h,alpha=0.2, color='green')
+        l,h=np.array(confidenceRange.confidenceRange(y).getTwoSidedOneSigmaConfidenceRange())
+        plt.axhspan(l,h,alpha=0.2, color='green')
+        # plt.annotate('95% CR',xy=(0.02,(m+h)/2), xycoords=('axes fraction','data'), fontsize=15)
+        
+        plt.legend()
+        plt.grid()
+        plt.xlabel('time [UTC]')
+        plt.ylabel('cross-ZD correction [mdeg]')
+
+        '''
+        ZD plot annotations
+        '''
+
+        plt.subplot(212,sharex=ax1)
+        y=self.dZD*1000
+        plt.plot(x,y,'o-')
+
+        #plot annotations
+        m=np.median(y)
+        plt.axhline(m,lw=2,c='k')
+        # plt.annotate('median={:.1f}'.format(m),xy=(0.01,0.01), xycoords=('axes fraction','data'))
+        plt.annotate('median={:.1f} mdeg'.format(m),xy=(0.01,0.01), xycoords=('axes fraction','axes fraction'), fontsize=12)
+        l,h=np.array(confidenceRange.confidenceRange(y).getTwoSidedTwoSigmaConfidenceRange())
+        plt.axhspan(l,h,alpha=0.2, color='green')
+        l,h=np.array(confidenceRange.confidenceRange(y).getTwoSidedOneSigmaConfidenceRange())
+        plt.axhspan(l,h,alpha=0.2, color='green')
+        # plt.annotate('95% CR',xy=(0.02,(m+h)/2), xycoords=('axes fraction','data'), fontsize=15)
+        
+        plt.grid()
+        plt.xlabel('time [UTC]')
+        plt.ylabel('ZD correction [mdeg]')
+
+
+        if outfile!='':
+            plt.savefig(outfile)
+        # self.
+        
+        
 
     def addZDoffset(self,offset):
         self.dZD+=offset
@@ -208,9 +284,20 @@ def get_median_corrections(args,cfg):
         (dxZD,dZD)
     '''
     correction_freq=['5','12','6_7']
-    recName=['C','X','M']
+    receivers=['C','X','M']
     # correction_files='cross_scan_data_file'+correction_freq
-    
+        # if args.plot_stats:
+        #
+        # receivers=['C','M','X']
+        # P=[]
+        # labels=[]
+        # tmscale=cfg.getint('ZED','time_scale')
+        #
+        # for rec in receivers:    
+        #     f=os.path.join(cfg['DATA']['data_dir'],cfg[rec]['cross_scan_data_file'])
+        #     P.append(pointingCorrections.fastScanCorrections(f,tmscale=tmscale))
+        #     labels.append(cfg[rec]['freq']+' GHz')
+
     start_time=None
     if cfg.has_option('ZED','start_time'):
         start_time=cfg['ZED']['start_time']
@@ -218,10 +305,11 @@ def get_median_corrections(args,cfg):
     if cfg.has_option('ZED','end_time'):
         end_time=cfg['ZED']['end_time']
     
-    for i,freq in enumerate(correction_freq):
+    for i,rec in enumerate(receivers):
         print('-----------------')    
-        print('Receiver: {}'.format(recName[i]))
-        f=os.path.join(cfg['DATA']['data_dir'],cfg['DATA']['cross_scan_data_file'+freq])
+        print('Receiver: {}'.format(rec))
+        freq=cfg[rec]['freq']
+        f=os.path.join(cfg['DATA']['data_dir'],cfg[rec]['cross_scan_data_file'])
         tmscale=cfg.getint('ZED','time_scale')
         P=fastScanCorrections(f,tmscale=tmscale, 
                               start_time=start_time,
@@ -231,7 +319,7 @@ def get_median_corrections(args,cfg):
         print('Frequency [GHz]: '+freq)
         print(P)
 
-        f=os.path.join(cfg['DATA']['data_dir'],cfg[recName[i]]['roh_hist'])
+        f=os.path.join(cfg['DATA']['data_dir'],cfg[rec]['roh_hist'])
         rohCorr=continuousCorrections(f)
         rZD,rxZD=rohCorr.last()
         P.addContinuousCorrections(rohCorr)
@@ -244,6 +332,11 @@ def get_median_corrections(args,cfg):
 
         print('Pointing corrections (unified to current roh epoch)')
         print(P)
+        f=os.path.join(cfg['DATA']['data_dir'],cfg[rec]['cross_scan_data_file']+'.'+cfg['DATA']['roh_unified_corrections_file_suffix']+'.jpg')
+        P.stats_plots(receiver=rec,freq=freq,outfile=f)
+        if args.verbose>2:
+            plt.show()
+        
 
 
         f=os.path.join(cfg['DATA']['data_dir'],cfg['DATA']['cont_corr_data_file'])

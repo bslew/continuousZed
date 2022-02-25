@@ -82,7 +82,10 @@ USAGE
                             default='')
         
         parser.add_argument('--plot', action='store_true',
-                            help='plot loaded corrections')
+                            help='plot loaded corrections [debug stuff]')
+        parser.add_argument('--plot_stats', action='store_true',
+                            help='plot corrections stats')
+        
 
         parser.add_argument('--temp', type=str, dest='temperatures_file',
                             help='File containing UTC dates and temperatueres in degC in format 2020-11-01T02:57:07 5.620000 [default: %(default)s]', 

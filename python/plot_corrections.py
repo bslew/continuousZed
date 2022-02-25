@@ -63,31 +63,36 @@ def main(argv=None): # IGNORE:C0111
     args = zed_parser.get_parser()
     cfg=config_file.readConfigFile(verbosity=args.verbose)
 
+
     P=[]
     labels=[]
     tmscale=cfg.getint('ZED','time_scale')
 
-    f=os.path.join(cfg['DATA']['cross_scan_data_dir'],'FastScan_6.70.off')
+    rec='M'
+    f=os.path.join(cfg['DATA']['data_dir'],cfg[rec]['cross_scan_data_file'])
     P.append(pointingCorrections.fastScanCorrections(f,tmscale=tmscale))
-    labels.append('6.7 GHz')
+    labels.append(cfg[rec]['freq']+' GHz')
 
-    f=os.path.join(cfg['DATA']['cross_scan_data_dir'],'FastScan_12.00.off')
+    rec='X'
+    f=os.path.join(cfg['DATA']['data_dir'],cfg[rec]['cross_scan_data_file'])
     P.append(pointingCorrections.fastScanCorrections(f,tmscale=tmscale))
     P[-1].addZDoffsetAfter('2021-08-05 00:00:00',-0.014)
     labels.append('12 GHz')
 
-    f=os.path.join(cfg['DATA']['cross_scan_data_dir'],'FastScan_22.00.off')
+    rec='K'
+    f=os.path.join(cfg['DATA']['data_dir'],cfg[rec]['cross_scan_data_file'])
     P.append(pointingCorrections.fastScanCorrections(f,tmscale=tmscale))
     labels.append('22 GHz')
 
 
-    of=os.path.join(cfg['DATA']['cross_scan_data_dir'],'corrections.jpg')
+    of=os.path.join(cfg['DATA']['data_dir'],'corrections.jpg')
     plot_corrections(P, labels, outfile=of)
 
 
     P=[]
     labels=[]
-    f=os.path.join(cfg['DATA']['cross_scan_data_dir'],'FastScan_6.70.off')
+    rec='M'
+    f=os.path.join(cfg['DATA']['data_dir'],cfg[rec]['cross_scan_data_file'])
     P.append(pointingCorrections.fastScanCorrections(f,tmscale=tmscale))
     labels.append('6.7 GHz')
 
@@ -101,23 +106,24 @@ def main(argv=None): # IGNORE:C0111
     print('rms ',np.std(nodrift.dZD))
     print('rms inside [-0.017, 0.017]: ',np.std(nodrift.dZD[np.abs(nodrift.dZD)<0.017]))
 
-    of=os.path.join(cfg['DATA']['cross_scan_data_dir'],'corrections-no_ZDdrift.jpg')
+    of=os.path.join(cfg['DATA']['data_dir'],'corrections-no_ZDdrift.jpg')
     plot_corrections(P, labels, outfile=of)
 
-    Tinter=temperature.tempModel(args.temperatures_file)
-    dt=P[-1].get_dt()
-    temp_offset=(0.283*np.array(Tinter(dt))-34.45)/1000.
-    print(temp_offset)
-    notemp=copy.deepcopy(nodrift)
-    notemp.dZD+=temp_offset
-    notemp.dZD-=np.median(notemp.dZD)
-    P.append(notemp)
-    labels.append('6.7 GHz - linear drift model and temp. dependence removed (A=18.71 mdeg/yr, C=0.283 mdeg/°C)')
-    print('rms ',np.std(notemp.dZD))
-    print('rms inside [-0.017, 0.017]: ',np.std(notemp.dZD[np.abs(notemp.dZD)<0.017]))
-
-    of=os.path.join(cfg['DATA']['cross_scan_data_dir'],'corrections-no_ZDdrift-no_temp.jpg')
-    plot_corrections(P, labels, outfile=of, overplot_custom_model=True)
+    if args.temperatures_file!='':
+        Tinter=temperature.tempModel(args.temperatures_file)
+        dt=P[-1].get_dt()
+        temp_offset=(0.283*np.array(Tinter(dt))-34.45)/1000.
+        print(temp_offset)
+        notemp=copy.deepcopy(nodrift)
+        notemp.dZD+=temp_offset
+        notemp.dZD-=np.median(notemp.dZD)
+        P.append(notemp)
+        labels.append('6.7 GHz - linear drift model and temp. dependence removed (A=18.71 mdeg/yr, C=0.283 mdeg/°C)')
+        print('rms ',np.std(notemp.dZD))
+        print('rms inside [-0.017, 0.017]: ',np.std(notemp.dZD[np.abs(notemp.dZD)<0.017]))
+    
+        of=os.path.join(cfg['DATA']['data_dir'],'corrections-no_ZDdrift-no_temp.jpg')
+        plot_corrections(P, labels, outfile=of, overplot_custom_model=True)
 
 
 if __name__ == "__main__":

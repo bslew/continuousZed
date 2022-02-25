@@ -64,4 +64,7 @@ zed: dw_crossscan_data send_zed_to_rt4
 
 calc_median:
 	source ${VENV}/bin/activate && continuousZed.py --median ${VERB}
+	
+sync_web_plots:
+	-cp -p data/*.jpg /home/rt32time/rt32time/data
 

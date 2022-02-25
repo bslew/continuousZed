@@ -332,7 +332,7 @@ def get_median_corrections(args,cfg):
 
         print('Pointing corrections (unified to current roh epoch)')
         print(P)
-        f=os.path.join(cfg['DATA']['data_dir'],cfg[rec]['cross_scan_data_file']+'.'+cfg['DATA']['roh_unified_corrections_file_suffix']+'.jpg')
+        f=os.path.join(cfg['DATA']['data_dir'],'corrections_'+rec+'.'+cfg['DATA']['roh_unified_corrections_file_suffix']+'.jpg')
         P.stats_plots(receiver=rec,freq=freq,outfile=f)
         if args.verbose>2:
             plt.show()

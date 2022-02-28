@@ -101,7 +101,7 @@ class fastScanCorrections():
         # self.pointing_data_all
 
 
-    def stats_plots(self,receiver='',freq='', outfile=''):
+    def stats_plots(self,receiver='',freq='', outfile='', fwhp=None):
         '''
         '''
         # if self.verbose>1:
@@ -355,8 +355,16 @@ def get_median_corrections(args,cfg):
         print(P)
         f=os.path.join(cfg['DATA']['data_dir'],'corrections_'+rec+'.'+cfg['DATA']['roh_unified_corrections_file_suffix']+'.jpg')
         stats[rec]=P.stats_plots(receiver=rec,freq=freq,outfile=f)
+        stats[rec]['fwhp']=cfg[rec]['fwhp']
+        stats[rec]['freq']=cfg[rec]['freq']
+        stats[rec]['dxZD']['sigma2fwhp']='%.2f' % (float(stats[rec]['dxZD']['sigma'])/cfg.getfloat(rec,'fwhp')/1000)
+        stats[rec]['dZD']['sigma2fwhp']='%.2f' % (float(stats[rec]['dZD']['sigma'])/cfg.getfloat(rec,'fwhp')/1000)
+        print('dxZD sigma2fwhp: ',stats[rec]['dxZD']['sigma2fwhp'])
+        print('dZD sigma2fwhp: ',stats[rec]['dZD']['sigma2fwhp'])
+        print()
         if args.verbose>2:
             plt.show()
+            print(stats)
         
 
 

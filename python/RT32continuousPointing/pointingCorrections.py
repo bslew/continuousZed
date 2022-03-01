@@ -201,7 +201,7 @@ class fastScanCorrections():
         TODO: make this smarter...
         '''
         cont=contcorr(self.dt)
-        self.cont_corrections=cont
+        self.cont_corrections=cont #if self.cont_corrections==None else self.cont_corrections-cont
         # print(self.dt)
         if self.verbose>1:
             print(cont)
@@ -215,7 +215,7 @@ class fastScanCorrections():
         modeled by contcorr interpolation object
         '''
         cont=contcorr(self.dt)
-        self.cont_corrections=cont
+        self.cont_corrections=cont #if self.cont_corrections==None else self.cont_corrections+cont
         # print(self.dt)
         if self.verbose>1:
             print(cont)
@@ -327,7 +327,8 @@ def get_median_corrections(args,cfg):
     stats={}
     for i,rec in enumerate(receivers):
         stats[rec]={}
-        print('-----------------')    
+        print('-----------------')
+        print('Raw pointing corrections')
         print('Receiver: {}'.format(rec))
         freq=cfg[rec]['freq']
         f=os.path.join(cfg['DATA']['data_dir'],cfg[rec]['cross_scan_data_file'])
@@ -340,19 +341,40 @@ def get_median_corrections(args,cfg):
         print('Frequency [GHz]: '+freq)
         print(P)
 
+        '''
+        ROH history corrected corrections
+        '''
+        print('Pointing corrections (unified to current roh)')
         f=os.path.join(cfg['DATA']['data_dir'],cfg[rec]['roh_hist'])
         rohCorr=continuousCorrections(f)
         rZD,rxZD=rohCorr.last()
         P.addContinuousCorrections(rohCorr)
         P.addxZDoffset(-rxZD)
         P.addZDoffset(-rZD)
+        print(P)
+
+
+        '''
+        continuous-corrections-history-corrected corrections
+        '''
+        print('Pointing corrections (unified to current continuous corrections)')
+        f=os.path.join(cfg['DATA']['data_dir'],cfg['DATA']['cont_corr_data_file'])
+        contCorr=continuousCorrections(f)
+        cZD,cxZD=contCorr.last()
+        P.addContinuousCorrections(contCorr)
+        P.addxZDoffset(-cxZD)
+        P.addZDoffset(-cZD)
+
 
         # P.subContinuousCorrections(rohCorr)
         # P.addxZDoffset(rxZD)
         # P.addZDoffset(rZD)
 
-        print('Pointing corrections (unified to current roh epoch)')
         print(P)
+        
+        '''
+        calculate stats
+        '''
         f=os.path.join(cfg['DATA']['data_dir'],'corrections_'+rec+'.'+cfg['DATA']['roh_unified_corrections_file_suffix']+'.jpg')
         stats[rec]=P.stats_plots(receiver=rec,freq=freq,outfile=f)
         stats[rec]['fwhp']=cfg[rec]['fwhp']
@@ -367,12 +389,14 @@ def get_median_corrections(args,cfg):
             print(stats)
         
 
-
-        f=os.path.join(cfg['DATA']['data_dir'],cfg['DATA']['cont_corr_data_file'])
-        contCorr=continuousCorrections(f)
-        P.addContinuousCorrections(contCorr)
+        '''
+        calculate current value of continuous corrections
+        '''
         print('Continuous corrections')
+        P.addxZDoffset(cxZD)
+        P.addZDoffset(cZD)
         print(P)
+
         print('-----------------')    
 
     stats_file=os.path.join(cfg['DATA']['data_dir'],'corrections_stats.'+cfg['DATA']['roh_unified_corrections_file_suffix']+'.pkl')

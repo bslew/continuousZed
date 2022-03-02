@@ -125,12 +125,14 @@ class fastScanCorrections():
         
         #plot annotations
         m=np.median(y)
+        rms=np.sqrt(np.mean(y**2))
         stats['Nobs']=len(x)
         stats['dt_start']=x[0]
         stats['dt_end']=x[-1]
         stats['dxZD']={}
         stats['dxZD']['median']='%.2f' % m
         stats['dxZD']['sigma']='%.2f' % y.std()
+        stats['dxZD']['rms']='%.2f' % rms
 
         
         plt.axhline(np.median(y),lw=2,c='k')
@@ -158,9 +160,11 @@ class fastScanCorrections():
 
         #plot annotations
         m=np.median(y)
+        rms=np.sqrt(np.mean(y**2))
         stats['dZD']={}
         stats['dZD']['median']='%.2f' % m
         stats['dZD']['sigma']='%.2f' % y.std()
+        stats['dZD']['rms']='%.2f' % rms
 
         plt.axhline(m,lw=2,c='k')
         # plt.annotate('median={:.1f}'.format(m),xy=(0.01,0.01), xycoords=('axes fraction','data'))
@@ -381,8 +385,12 @@ def get_median_corrections(args,cfg):
         stats[rec]['freq']=cfg[rec]['freq']
         stats[rec]['dxZD']['sigma2fwhp']='%.2f' % (float(stats[rec]['dxZD']['sigma'])/cfg.getfloat(rec,'fwhp')/1000)
         stats[rec]['dZD']['sigma2fwhp']='%.2f' % (float(stats[rec]['dZD']['sigma'])/cfg.getfloat(rec,'fwhp')/1000)
-        print('dxZD sigma2fwhp: ',stats[rec]['dxZD']['sigma2fwhp'])
-        print('dZD sigma2fwhp: ',stats[rec]['dZD']['sigma2fwhp'])
+        stats[rec]['dxZD']['rms2fwhp']='%.2f' % (float(stats[rec]['dxZD']['rms'])/cfg.getfloat(rec,'fwhp')/1000)
+        stats[rec]['dZD']['rms2fwhp']='%.2f' % (float(stats[rec]['dZD']['rms'])/cfg.getfloat(rec,'fwhp')/1000)
+        print('dxZD rms [mdeg]: ',stats[rec]['dxZD']['rms'])
+        print('dZD rms [mdeg]: ',stats[rec]['dZD']['rms'])
+        print('dxZD rms2fwhp: ',stats[rec]['dxZD']['rms2fwhp'])
+        print('dZD rms2fwhp: ',stats[rec]['dZD']['rms2fwhp'])
         print()
         if args.verbose>2:
             plt.show()

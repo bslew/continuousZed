@@ -329,6 +329,7 @@ def get_median_corrections(args,cfg):
     if cfg.has_option('ZED','end_time'):
         end_time=cfg['ZED']['end_time']
     stats={}
+    stats['last_update']=datetime.datetime.strftime(datetime.datetime.utcnow(),'%Y-%m-%d %H:%M:%S')
     for i,rec in enumerate(receivers):
         stats[rec]={}
         print('-----------------')
@@ -407,6 +408,7 @@ def get_median_corrections(args,cfg):
 
         print('-----------------')    
 
+    
     stats_file=os.path.join(cfg['DATA']['data_dir'],'corrections_stats.'+cfg['DATA']['roh_unified_corrections_file_suffix']+'.pkl')
     with open(stats_file,'wb') as f:
         pickle.dump(stats,f)

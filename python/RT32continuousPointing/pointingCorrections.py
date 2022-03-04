@@ -39,6 +39,10 @@ class fastScanCorrections():
         self.time_offset=90
         if 'tmscale' in kwargs.keys():
             self.time_offset=kwargs['tmscale']
+            
+        self.filter_nsigma=3.
+        if kwargs['filter_nsigma']!=None:
+            self.filter_nsigma=kwargs['filter_nsigma']
 
         self.start_time=None
         if 'start_time' in kwargs.keys():
@@ -89,7 +93,7 @@ class fastScanCorrections():
         '''
         filter outliers
         '''
-        nsigma=3.
+        nsigma=self.filter_nsigma
         self.dZD=self.extract_dZD()
         l,h=np.array(confidenceRange.confidenceRange(self.dZD).getTwoSidedOneSigmaConfidenceRange())
         m=np.median(self.dZD)

@@ -49,11 +49,12 @@ class fastScanCorrections():
             if kwargs['end_time']!=None:
                 self.end_time=datetime.datetime.strptime(kwargs['end_time'],'%Y-%m-%d %H:%M:%S')
 
-        self.process_data()
         
         self.verbose=0
         if 'verbose' in kwargs.keys():
             self.verbose=kwargs['verbose']
+
+        self.process_data()
     
     def get_dt(self):
         return self.dt
@@ -78,20 +79,66 @@ class fastScanCorrections():
         select by time
         '''
         self.pointing_data_all=pointing_data
-        self.mask=[ dt(x)>dt0 and dt(x)<dt1 for x in pointing_data ]
+        self.selected=[ dt(x)>dt0 and dt(x)<dt1 for x in pointing_data ]
 
         self.pointing_data=[ x for x in pointing_data if dt(x)>dt0 and dt(x)<dt1]
-        self.dt=[ dt(x) for x in pointing_data if dt(x)>dt0 and dt(x)<dt1]
+        self.dt=[ dt(x) for x in self.pointing_data]
         
+
+
+        '''
+        filter outliers
+        '''
+        nsigma=3.
+        self.dZD=self.extract_dZD()
+        l,h=np.array(confidenceRange.confidenceRange(self.dZD).getTwoSidedOneSigmaConfidenceRange())
+        m=np.median(self.dZD)
+        l=l-nsigma*(m-l)
+        h=h+nsigma*(h-m)
+        selected=np.logical_and(self.dZD<h,self.dZD>l)
+        # self.pointing_data=[ x for i,x in enumerate(self.pointing_data) if selected[i]]
+        if self.verbose>0:
+            print(l,h)
+            print(selected)
+            print(self.dZD)
+            print('removed {} dZD outliers'.format(len(selected)-len(selected[selected==True])))
+        
+        self.dxZD=self.extract_dxZD()
+        l,h=np.array(confidenceRange.confidenceRange(self.dxZD).getTwoSidedOneSigmaConfidenceRange())
+        m=np.median(self.dxZD)
+        l=l-nsigma*(m-l)
+        h=h+nsigma*(h-m)
+        selected=np.logical_and(selected,self.dxZD<h,self.dxZD>l)
+        if self.verbose>0:
+            print(l,h)
+            print(selected)
+            print(self.dxZD)
+            print('removed {} dxZD outliers'.format(len(selected)-len(selected[selected==True])))
+
+        self.pointing_data=[ x for i,x in enumerate(self.pointing_data) if selected[i]]
+
         '''
         extract dZD
         '''
-        self.dZD=np.array([ float(x[12]) for x in self.pointing_data],dtype=float)
+        self.dZD=self.extract_dZD()
     
         '''
         extract dAZ*sin(ZD)
         '''
-        self.dxZD=np.array([ float(x[6])*np.sin(float(x[11])*np.pi/180) for x in self.pointing_data],dtype=float)
+        self.dxZD=self.extract_dxZD()
+
+
+        self.dt=[ dt(x) for x in self.pointing_data]
+
+        
+    # def extract_dt(self) -> list:
+    #     return [ dt(x) for x in self.pointing_data]
+
+    def extract_dZD(self):
+        return np.array([ float(x[12]) for x in self.pointing_data],dtype=float)
+
+    def extract_dxZD(self):
+        return np.array([ float(x[6])*np.sin(float(x[11])*np.pi/180) for x in self.pointing_data],dtype=float)
 
     def save(self,fname):
         '''

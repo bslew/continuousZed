@@ -389,10 +389,13 @@ def get_median_corrections(args,cfg):
         freq=cfg[rec]['freq']
         f=os.path.join(cfg['DATA']['data_dir'],cfg[rec]['cross_scan_data_file'])
         tmscale=cfg.getint('ZED','time_scale')
+        filter_nsigma=cfg.getfloat('DATA','filter_nsigma')
         P=fastScanCorrections(f,tmscale=tmscale, 
                               start_time=start_time,
                               end_time=end_time,
-                              verbose=args.verbose)
+                              verbose=args.verbose,
+                              filter_nsigma=filter_nsigma,
+                              )
         print('Time scale: last {} days'.format(tmscale))
         print('Frequency [GHz]: '+freq)
         print(P)

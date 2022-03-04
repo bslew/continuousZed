@@ -41,7 +41,7 @@ class fastScanCorrections():
             self.time_offset=kwargs['tmscale']
             
         self.filter_nsigma=3.
-        if kwargs['filter_nsigma']!=None:
+        if 'filter_nsigma' in kwargs.keys():
             self.filter_nsigma=kwargs['filter_nsigma']
 
         self.start_time=None

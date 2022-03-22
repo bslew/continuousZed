@@ -80,6 +80,22 @@ USAGE
         parser.add_argument('--set_dxZD', type=str,
                             help='send xZD continuous correction to RT-32 control system (units: deg) [default: %(default)s]', 
                             default='')
+
+        parser.add_argument('-o','--export_to', type=str,
+                            help='''save/export corrections suitable for modeling pointing. 
+                            The input corrections will be ammended by history of ROH and 
+                            continuous corrections. The values exported will be as if 
+                            measured with the most recent ROH but without continuous corrections.
+                            This will be consistent with corrections used before introducing
+                            continuous corrections into control system''',
+                            default='')
+
+        parser.add_argument('--start_time', type=str,
+                            help='''Start time used to filter input pointing observations.
+                            The option overrides the config file option. By default - no selection.
+                            The format should be like in the config file
+                            ''',
+                            default='')
         
         parser.add_argument('--plot', action='store_true',
                             help='plot loaded corrections [debug stuff]')

@@ -76,6 +76,7 @@ def main(argv=None): # IGNORE:C0111
         logger.info('Continuous corrections for RT32 ZD: {:.0f}'.format(dZD*10000))
         logger.info('Continuous corrections for RT32 xZD: {:.0f}'.format(dxZD*10000))
         # logger.info('Actual continuous corrections xZD [deg]: {}'.format(data['cont_dxElev']))
+
             
     if args.test_rt32_comm:
         rt32comm.rt32tcpclient().connectRT4(

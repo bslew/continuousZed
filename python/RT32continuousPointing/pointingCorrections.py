@@ -57,6 +57,7 @@ class fastScanCorrections():
         self.verbose=0
         if 'verbose' in kwargs.keys():
             self.verbose=kwargs['verbose']
+            print("start_time: ",self.start_time)
 
         self.process_data()
     
@@ -68,17 +69,24 @@ class fastScanCorrections():
         dt0=datetime.datetime.utcnow()-tdelta
         dt1=datetime.datetime.utcnow()
         if self.start_time:
-            if self.start_time>dt0:
-                dt0=self.start_time
+            # if self.start_time>dt0:
+            dt0=self.start_time
         if self.end_time:
-            if self.end_time<dt1:
-                dt1=self.end_time
+            # if self.end_time<dt1:
+            dt1=self.end_time
         
         pointing_data=[ re.sub(',','',x).split(' ') for x in self.data 
                        if (len(x.split(' '))==13 and x[0]!='#') ]
         
         todtstr=lambda x: '{}-{}-{} {}'.format(x[3],x[2],x[1],x[4])
         dt=lambda x: datetime.datetime.strptime(todtstr(x),'%Y-%m-%d %H:%M:%S')
+
+        '''
+        elevation scan time
+        '''
+        todtstr_EL=lambda x: '{}-{}-{} {}'.format(x[9],x[8],x[7],x[10])
+        dt_EL=lambda x: datetime.datetime.strptime(todtstr_EL(x),'%Y-%m-%d %H:%M:%S')
+
         '''
         select by time
         '''
@@ -95,31 +103,34 @@ class fastScanCorrections():
         '''
         nsigma=self.filter_nsigma
         self.dZD=self.extract_dZD()
-        l,h=np.array(confidenceRange.confidenceRange(self.dZD).getTwoSidedOneSigmaConfidenceRange())
-        m=np.median(self.dZD)
-        l=l-nsigma*(m-l)
-        h=h+nsigma*(h-m)
-        selected=np.logical_and(self.dZD<h,self.dZD>l)
-        # self.pointing_data=[ x for i,x in enumerate(self.pointing_data) if selected[i]]
-        if self.verbose>0:
-            print(l,h)
-            print(selected)
-            print(self.dZD)
-            print('removed {} dZD outliers'.format(len(selected)-len(selected[selected==True])))
         
-        self.dxZD=self.extract_dxZD()
-        l,h=np.array(confidenceRange.confidenceRange(self.dxZD).getTwoSidedOneSigmaConfidenceRange())
-        m=np.median(self.dxZD)
-        l=l-nsigma*(m-l)
-        h=h+nsigma*(h-m)
-        selected=np.logical_and(selected,self.dxZD<h,self.dxZD>l)
-        if self.verbose>0:
-            print(l,h)
-            print(selected)
-            print(self.dxZD)
-            print('removed {} dxZD outliers'.format(len(selected)-len(selected[selected==True])))
-
-        self.pointing_data=[ x for i,x in enumerate(self.pointing_data) if selected[i]]
+        if len(self.dZD)>1:
+        
+            l,h=np.array(confidenceRange.confidenceRange(self.dZD).getTwoSidedOneSigmaConfidenceRange())
+            m=np.median(self.dZD)
+            l=l-nsigma*(m-l)
+            h=h+nsigma*(h-m)
+            selected=np.logical_and(self.dZD<h,self.dZD>l)
+            # self.pointing_data=[ x for i,x in enumerate(self.pointing_data) if selected[i]]
+            if self.verbose>0:
+                print(l,h)
+                print(selected)
+                print(self.dZD)
+                print('removed {} dZD outliers'.format(len(selected)-len(selected[selected==True])))
+            
+            self.dxZD=self.extract_dxZD()
+            l,h=np.array(confidenceRange.confidenceRange(self.dxZD).getTwoSidedOneSigmaConfidenceRange())
+            m=np.median(self.dxZD)
+            l=l-nsigma*(m-l)
+            h=h+nsigma*(h-m)
+            selected=np.logical_and(selected,self.dxZD<h,self.dxZD>l)
+            if self.verbose>0:
+                print(l,h)
+                print(selected)
+                print(self.dxZD)
+                print('removed {} dxZD outliers'.format(len(selected)-len(selected[selected==True])))
+    
+            self.pointing_data=[ x for i,x in enumerate(self.pointing_data) if selected[i]]
 
         '''
         extract dZD
@@ -133,10 +144,20 @@ class fastScanCorrections():
 
 
         self.dt=[ dt(x) for x in self.pointing_data]
+        self.dt_EL=[ dt_EL(x) for x in self.pointing_data]
 
         
     # def extract_dt(self) -> list:
     #     return [ dt(x) for x in self.pointing_data]
+
+    def extract_src(self):
+        return np.array([ x[0] for x in self.pointing_data],dtype=str)
+
+    def extract_AZ(self):
+        return np.array([ float(x[5]) for x in self.pointing_data],dtype=float)
+
+    def extract_ZD(self):
+        return np.array([ float(x[11]) for x in self.pointing_data],dtype=float)
 
     def extract_dZD(self):
         return np.array([ float(x[12]) for x in self.pointing_data],dtype=float)
@@ -150,7 +171,19 @@ class fastScanCorrections():
         the input format
         '''
         # self.pointing_data_all
-
+        src=self.extract_src()
+        sZ=np.sin(self.extract_ZD()*np.pi/180)
+        dA=self.dxZD
+        dZ=self.dZD
+        with open(fname,'w') as f:
+            for i in range(len(self.pointing_data)):
+                l='%s ' % src[i]
+                l+='%s %s %s, %s ' % (self.pointing_data[i][1],self.pointing_data[i][2],self.pointing_data[i][3],self.pointing_data[i][4])
+                l+='%s %.5f ' % (self.pointing_data[i][5],self.dxZD[i]/sZ[i])
+                l+='%s %s %s, %s ' % (self.pointing_data[i][7],self.pointing_data[i][8],self.pointing_data[i][9],self.pointing_data[i][10])
+                l+='%s %.5f' % (self.pointing_data[i][11],self.dZD[i])
+                l+='\n'
+                f.write(l)
 
     def stats_plots(self,receiver='',freq='', outfile='', fwhp=None):
         '''
@@ -159,15 +192,15 @@ class fastScanCorrections():
         
         stats={}
         
-        
+        x=self.dt
+        y=self.dxZD*1000
+
         '''
         cross ZD corrections vs time
         '''
         fig=plt.figure(figsize=(12,8))
         locator = mdates.AutoDateLocator(minticks=3, maxticks=7)
         formatter = mdates.ConciseDateFormatter(locator)
-        x=self.dt
-        y=self.dxZD*1000
         ax1=plt.subplot(211)
         ax1.xaxis.set_major_locator(locator)
         ax1.xaxis.set_major_formatter(formatter)
@@ -342,7 +375,8 @@ class fastScanCorrections():
         # return ''.join(self.pointing_data)
         return self.__repr__()
 
-            
+    def __len__(self): 
+        return len(self.dxZD)
 
 def get_median_corrections(args,cfg):
     '''
@@ -379,6 +413,9 @@ def get_median_corrections(args,cfg):
     end_time=None
     if cfg.has_option('ZED','end_time'):
         end_time=cfg['ZED']['end_time']
+    
+    if args.start_time!='':
+        start_time=args.start_time
     stats={}
     stats['last_update']=datetime.datetime.strftime(datetime.datetime.utcnow(),'%Y-%m-%d %H:%M:%S')
     for i,rec in enumerate(receivers):
@@ -396,72 +433,80 @@ def get_median_corrections(args,cfg):
                               verbose=args.verbose,
                               filter_nsigma=filter_nsigma,
                               )
-        print('Time scale: last {} days'.format(tmscale))
-        print('Frequency [GHz]: '+freq)
-        print(P)
-
-        '''
-        ROH history corrected corrections
-        '''
-        print('Pointing corrections (unified to current roh)')
-        f=os.path.join(cfg['DATA']['data_dir'],cfg[rec]['roh_hist'])
-        rohCorr=continuousCorrections(f)
-        rZD,rxZD=rohCorr.last()
-        P.addContinuousCorrections(rohCorr)
-        P.addxZDoffset(-rxZD)
-        P.addZDoffset(-rZD)
-        print(P)
-
-
-        '''
-        continuous-corrections-history-corrected corrections
-        '''
-        print('Pointing corrections (unified to current continuous corrections)')
-        f=os.path.join(cfg['DATA']['data_dir'],cfg['DATA']['cont_corr_data_file'])
-        contCorr=continuousCorrections(f)
-        cZD,cxZD=contCorr.last()
-        P.addContinuousCorrections(contCorr)
-        P.addxZDoffset(-cxZD)
-        P.addZDoffset(-cZD)
-
-
-        # P.subContinuousCorrections(rohCorr)
-        # P.addxZDoffset(rxZD)
-        # P.addZDoffset(rZD)
-
-        print(P)
-        
-        '''
-        calculate stats
-        '''
-        f=os.path.join(cfg['DATA']['data_dir'],'corrections_'+rec+'.'+cfg['DATA']['roh_unified_corrections_file_suffix']+'.jpg')
-        stats[rec]=P.stats_plots(receiver=rec,freq=freq,outfile=f)
-        stats[rec]['fwhp']=cfg[rec]['fwhp']
-        stats[rec]['freq']=cfg[rec]['freq']
-        stats[rec]['dxZD']['sigma2fwhp']='%.2f' % (float(stats[rec]['dxZD']['sigma'])/cfg.getfloat(rec,'fwhp')/1000)
-        stats[rec]['dZD']['sigma2fwhp']='%.2f' % (float(stats[rec]['dZD']['sigma'])/cfg.getfloat(rec,'fwhp')/1000)
-        stats[rec]['dxZD']['rms2fwhp']='%.2f' % (float(stats[rec]['dxZD']['rms'])/cfg.getfloat(rec,'fwhp')/1000)
-        stats[rec]['dZD']['rms2fwhp']='%.2f' % (float(stats[rec]['dZD']['rms'])/cfg.getfloat(rec,'fwhp')/1000)
-        print('dxZD rms [mdeg]: ',stats[rec]['dxZD']['rms'])
-        print('dZD rms [mdeg]: ',stats[rec]['dZD']['rms'])
-        print('dxZD rms2fwhp: ',stats[rec]['dxZD']['rms2fwhp'])
-        print('dZD rms2fwhp: ',stats[rec]['dZD']['rms2fwhp'])
-        print()
-        if args.verbose>2:
-            plt.show()
-            print(stats)
-        
-
-        '''
-        calculate current value of continuous corrections
-        '''
-        print('Continuous corrections')
-        P.addxZDoffset(cxZD)
-        P.addZDoffset(cZD)
-        print(P)
-
-        print('-----------------')    
-
+        if len(P)>0:
+            print('Time scale: last {} days'.format(tmscale))
+            print('Frequency [GHz]: '+freq)
+            print(P)
+    
+            '''
+            ROH history corrected corrections
+            '''
+            print('Pointing corrections (unified to current roh)')
+            f=os.path.join(cfg['DATA']['data_dir'],cfg[rec]['roh_hist'])
+            rohCorr=continuousCorrections(f)
+            rZD,rxZD=rohCorr.last()
+            P.addContinuousCorrections(rohCorr)
+            P.addxZDoffset(-rxZD)
+            P.addZDoffset(-rZD)
+            print(P)
+    
+    
+            '''
+            continuous-corrections-history-corrected corrections
+            '''
+            print('Pointing corrections (unified to current continuous corrections)')
+            f=os.path.join(cfg['DATA']['data_dir'],cfg['DATA']['cont_corr_data_file'])
+            contCorr=continuousCorrections(f)
+            cZD,cxZD=contCorr.last()
+            P.addContinuousCorrections(contCorr)
+            P.addxZDoffset(-cxZD)
+            P.addZDoffset(-cZD)
+    
+    
+            # P.subContinuousCorrections(rohCorr)
+            # P.addxZDoffset(rxZD)
+            # P.addZDoffset(rZD)
+    
+            print(P)
+            
+            '''
+            calculate stats
+            '''
+            f=os.path.join(cfg['DATA']['data_dir'],'corrections_'+rec+'.'+cfg['DATA']['roh_unified_corrections_file_suffix']+'.jpg')
+            stats[rec]=P.stats_plots(receiver=rec,freq=freq,outfile=f)
+            stats[rec]['fwhp']=cfg[rec]['fwhp']
+            stats[rec]['freq']=cfg[rec]['freq']
+            stats[rec]['dxZD']['sigma2fwhp']='%.2f' % (float(stats[rec]['dxZD']['sigma'])/cfg.getfloat(rec,'fwhp')/1000)
+            stats[rec]['dZD']['sigma2fwhp']='%.2f' % (float(stats[rec]['dZD']['sigma'])/cfg.getfloat(rec,'fwhp')/1000)
+            stats[rec]['dxZD']['rms2fwhp']='%.2f' % (float(stats[rec]['dxZD']['rms'])/cfg.getfloat(rec,'fwhp')/1000)
+            stats[rec]['dZD']['rms2fwhp']='%.2f' % (float(stats[rec]['dZD']['rms'])/cfg.getfloat(rec,'fwhp')/1000)
+            print('dxZD rms [mdeg]: ',stats[rec]['dxZD']['rms'])
+            print('dZD rms [mdeg]: ',stats[rec]['dZD']['rms'])
+            print('dxZD rms2fwhp: ',stats[rec]['dxZD']['rms2fwhp'])
+            print('dZD rms2fwhp: ',stats[rec]['dZD']['rms2fwhp'])
+            print()
+            if args.verbose>2:
+                plt.show()
+                print(stats)
+            
+    
+            '''
+            calculate current value of continuous corrections
+            '''
+            print('Continuous corrections')
+            P.addxZDoffset(cxZD)
+            P.addZDoffset(cZD)
+            print(P)
+    
+            print('-----------------') 
+            
+            '''
+            export corrections if requested in format consistent with fast_scan program
+            '''   
+            if args.export_to!='':
+                ofile=args.export_to+'-'+rec+'.off'
+                P.save(ofile)
+                print("Corrections exported to file: {}".format(ofile))
     
     stats_file=os.path.join(cfg['DATA']['data_dir'],'corrections_stats.'+cfg['DATA']['roh_unified_corrections_file_suffix']+'.pkl')
     with open(stats_file,'wb') as f:

@@ -81,8 +81,8 @@ USAGE
                             help='send xZD continuous correction to RT-32 control system (units: deg) [default: %(default)s]', 
                             default='')
 
-        parser.add_argument('-o','--export_to', type=str,
-                            help='''save/export corrections suitable for modeling pointing. 
+        parser.add_argument('--export_suff', type=str,
+                            help='''export suffis. Save/export corrections suitable for modeling pointing. 
                             The input corrections will be ammended by history of ROH and 
                             continuous corrections. The values exported will be as if 
                             measured with the most recent ROH but without continuous corrections.
@@ -92,6 +92,12 @@ USAGE
 
         parser.add_argument('--start_time', type=str,
                             help='''Start time used to filter input pointing observations.
+                            The option overrides the config file option. By default - no selection.
+                            The format should be like in the config file
+                            ''',
+                            default='')
+        parser.add_argument('--end_time', type=str,
+                            help='''End time used to filter input pointing observations.
                             The option overrides the config file option. By default - no selection.
                             The format should be like in the config file
                             ''',
@@ -107,6 +113,11 @@ USAGE
                             help='File containing UTC dates and temperatueres in degC in format 2020-11-01T02:57:07 5.620000 [default: %(default)s]', 
                             default='')
 
+        parser.add_argument('--Tstruct', type=str, dest='Tstruct_file',
+                            help='''
+                            CSV file containing UTC dates and structure temperatueres 
+                            in degC. eg. data/Tstruct.csv.gz [default: %(default)s]''', 
+                            default='')
 
         # Process arguments
         args = parser.parse_args()

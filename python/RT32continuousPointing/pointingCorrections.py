@@ -14,6 +14,7 @@ from scipy import interpolate
 import pandas as pd
 from RT32continuousPointing import confidenceRange
 import pickle
+import statsmodels.api as smapi
 
 
 class fastScanCorrections():
@@ -229,7 +230,7 @@ class fastScanCorrections():
         plt.axhspan(l,h,alpha=0.2, color='green')
         # plt.annotate('95% CR',xy=(0.02,(m+h)/2), xycoords=('axes fraction','data'), fontsize=15)
         
-        plt.legend()
+        plt.legend(loc='lower right')
         plt.grid()
         plt.xlabel('time [UTC]')
         plt.ylabel('cross-ZD correction [mdeg]')
@@ -394,6 +395,8 @@ def get_median_corrections(args,cfg):
     '''
     correction_freq=['5','12','6_7']
     receivers=['C','X','M']
+    # correction_freq=['6_7']
+    # receivers=['M']
     # correction_files='cross_scan_data_file'+correction_freq
         # if args.plot_stats:
         #
@@ -416,16 +419,23 @@ def get_median_corrections(args,cfg):
     
     if args.start_time!='':
         start_time=args.start_time
+    if args.end_time!='':
+        end_time=args.end_time
     stats={}
     stats['last_update']=datetime.datetime.strftime(datetime.datetime.utcnow(),'%Y-%m-%d %H:%M:%S')
+    tmscale=cfg.getint('ZED','time_scale')
+    stats['tmscale']=tmscale
+    stats['start_time']=start_time
+    stats['end_time']=end_time
+    stats['receivers']={}
+    # stats['correction_freq']=correction_freq
+    
     for i,rec in enumerate(receivers):
-        stats[rec]={}
         print('-----------------')
         print('Raw pointing corrections')
         print('Receiver: {}'.format(rec))
         freq=cfg[rec]['freq']
         f=os.path.join(cfg['DATA']['data_dir'],cfg[rec]['cross_scan_data_file'])
-        tmscale=cfg.getint('ZED','time_scale')
         filter_nsigma=cfg.getfloat('DATA','filter_nsigma')
         P=fastScanCorrections(f,tmscale=tmscale, 
                               start_time=start_time,
@@ -434,6 +444,7 @@ def get_median_corrections(args,cfg):
                               filter_nsigma=filter_nsigma,
                               )
         if len(P)>0:
+            stats['receivers'][rec]={}
             print('Time scale: last {} days'.format(tmscale))
             print('Frequency [GHz]: '+freq)
             print(P)
@@ -450,6 +461,14 @@ def get_median_corrections(args,cfg):
             P.addZDoffset(-rZD)
             print(P)
     
+            '''
+            export corrections if requested in format consistent with fast_scan program
+            '''   
+            ofile=os.path.join(cfg['DATA']['data_dir'],'corrections'+args.export_suff+'-'+rec+'.'+cfg['DATA']['roh_unified_corrections_file_suffix']+'.off')
+            P.save(ofile)
+            print("Corrections exported to file: {}".format(ofile))
+            stats['receivers'][rec]['corr_rohuni_export_file']=os.path.basename(ofile)
+
     
             '''
             continuous-corrections-history-corrected corrections
@@ -472,18 +491,19 @@ def get_median_corrections(args,cfg):
             '''
             calculate stats
             '''
-            f=os.path.join(cfg['DATA']['data_dir'],'corrections_'+rec+'.'+cfg['DATA']['roh_unified_corrections_file_suffix']+'.jpg')
-            stats[rec]=P.stats_plots(receiver=rec,freq=freq,outfile=f)
-            stats[rec]['fwhp']=cfg[rec]['fwhp']
-            stats[rec]['freq']=cfg[rec]['freq']
-            stats[rec]['dxZD']['sigma2fwhp']='%.2f' % (float(stats[rec]['dxZD']['sigma'])/cfg.getfloat(rec,'fwhp')/1000)
-            stats[rec]['dZD']['sigma2fwhp']='%.2f' % (float(stats[rec]['dZD']['sigma'])/cfg.getfloat(rec,'fwhp')/1000)
-            stats[rec]['dxZD']['rms2fwhp']='%.2f' % (float(stats[rec]['dxZD']['rms'])/cfg.getfloat(rec,'fwhp')/1000)
-            stats[rec]['dZD']['rms2fwhp']='%.2f' % (float(stats[rec]['dZD']['rms'])/cfg.getfloat(rec,'fwhp')/1000)
-            print('dxZD rms [mdeg]: ',stats[rec]['dxZD']['rms'])
-            print('dZD rms [mdeg]: ',stats[rec]['dZD']['rms'])
-            print('dxZD rms2fwhp: ',stats[rec]['dxZD']['rms2fwhp'])
-            print('dZD rms2fwhp: ',stats[rec]['dZD']['rms2fwhp'])
+            f=os.path.join(cfg['DATA']['data_dir'],'corrections'+args.export_suff+'-'+rec+'.'+cfg['DATA']['rohcont_unified_corrections_file_suffix']+'.jpg')
+            # f=os.path.join(cfg['DATA']['data_dir'],'corrections_'+rec+'.'+cfg['DATA']['rohcont_unified_corrections_file_suffix']+'.jpg')
+            stats['receivers'][rec]=P.stats_plots(receiver=rec,freq=freq,outfile=f)
+            stats['receivers'][rec]['fwhp']=cfg[rec]['fwhp']
+            stats['receivers'][rec]['freq']=cfg[rec]['freq']
+            stats['receivers'][rec]['dxZD']['sigma2fwhp']='%.2f' % (float(stats['receivers'][rec]['dxZD']['sigma'])/cfg.getfloat(rec,'fwhp')/1000)
+            stats['receivers'][rec]['dZD']['sigma2fwhp']='%.2f' % (float(stats['receivers'][rec]['dZD']['sigma'])/cfg.getfloat(rec,'fwhp')/1000)
+            stats['receivers'][rec]['dxZD']['rms2fwhp']='%.2f' % (float(stats['receivers'][rec]['dxZD']['rms'])/cfg.getfloat(rec,'fwhp')/1000)
+            stats['receivers'][rec]['dZD']['rms2fwhp']='%.2f' % (float(stats['receivers'][rec]['dZD']['rms'])/cfg.getfloat(rec,'fwhp')/1000)
+            print('dxZD rms [mdeg]: ',stats['receivers'][rec]['dxZD']['rms'])
+            print('dZD rms [mdeg]: ',stats['receivers'][rec]['dZD']['rms'])
+            print('dxZD rms2fwhp: ',stats['receivers'][rec]['dxZD']['rms2fwhp'])
+            print('dZD rms2fwhp: ',stats['receivers'][rec]['dZD']['rms2fwhp'])
             print()
             if args.verbose>2:
                 plt.show()
@@ -498,19 +518,93 @@ def get_median_corrections(args,cfg):
             P.addZDoffset(cZD)
             print(P)
     
-            print('-----------------') 
-            
+
             '''
             export corrections if requested in format consistent with fast_scan program
             '''   
-            if args.export_to!='':
-                ofile=args.export_to+'-'+rec+'.off'
-                P.save(ofile)
-                print("Corrections exported to file: {}".format(ofile))
+            ofile=os.path.join(cfg['DATA']['data_dir'],'corrections'+args.export_suff+'-'+rec+'.'+cfg['DATA']['rohcontoff_unified_corrections_file_suffix']+'.off')
+            P.save(ofile)
+            print("Corrections exported to file: {}".format(ofile))
+            stats['receivers'][rec]['corr_uni_off_export_file']=os.path.basename(ofile)
+
+            print('-----------------') 
     
-    stats_file=os.path.join(cfg['DATA']['data_dir'],'corrections_stats.'+cfg['DATA']['roh_unified_corrections_file_suffix']+'.pkl')
-    with open(stats_file,'wb') as f:
+    
+            if args.Tstruct_file!='':
+                Tstruct=pd.read_csv(args.Tstruct_file)
+                print('Tstruct has {} entries'.format(len(Tstruct)))
+                Tstruct['TL1']=(Tstruct['T_11']+Tstruct['T_12']+Tstruct['T_13']+Tstruct['T_14'])/4
+                Tstruct['TL2']=(Tstruct['T_21']+Tstruct['T_22']+Tstruct['T_23']+Tstruct['T_24'])/4
+                Tstruct['TL3']=(Tstruct['T_31']+Tstruct['T_32']+Tstruct['T_33']+Tstruct['T_34'])/4
+                Tstruct['TL4']=(Tstruct['T_41']+Tstruct['T_42']+Tstruct['T_43']+Tstruct['T_44'])/4
+
+                # Tstruct['SN1']=((Tstruct['T_11']-Tstruct['TL1'])/(Tstruct['T_13']-Tstruct['TL1']))
+                # Tstruct['SN2']=((Tstruct['T_21']-Tstruct['TL2'])/(Tstruct['T_23']-Tstruct['TL2']))
+                # Tstruct['SN3']=((Tstruct['T_31']-Tstruct['TL3'])/(Tstruct['T_33']-Tstruct['TL3']))
+                # Tstruct['SN4']=((Tstruct['T_41']-Tstruct['TL4'])/(Tstruct['T_43']-Tstruct['TL4']))
+                # Tstruct['SN1']=Tstruct['T_11']-Tstruct['T_13']
+                # Tstruct['SN2']=Tstruct['T_21']-Tstruct['T_23']
+                # Tstruct['SN3']=Tstruct['T_31']-Tstruct['T_33']
+                # Tstruct['SN4']=Tstruct['T_41']-Tstruct['T_43']
+                # 
+                Tstruct['SN1']=Tstruct['TL1']-Tstruct['TL2']
+                Tstruct['SN2']=Tstruct['TL4']-Tstruct['TL3']
+                Tstruct['FB']=0.5*(Tstruct['SN1']+Tstruct['SN2'])
+                
+                plt.figure(figsize=(12,8))
+                locator = mdates.AutoDateLocator(minticks=3, maxticks=7)
+                formatter = mdates.ConciseDateFormatter(locator)
+                ax1=plt.subplot(111)
+                ax1.xaxis.set_major_locator(locator)
+                ax1.xaxis.set_major_formatter(formatter)
+                dt=[ datetime.datetime.strptime(x,"%Y-%m-%d %H:%M:%S") for x in Tstruct['dt'][::10]]
+                plt.scatter(dt,Tstruct['FB'][::10],label='front-back difference')
+                plt.legend()
+                plt.show()
+                
+                # control
+                # Tstruct['SN1']=Tstruct['TL1']-Tstruct['TL4']
+                # Tstruct['SN2']=Tstruct['TL2']-Tstruct['TL3']
+                # Tstruct['FB']=0.5*(Tstruct['SN1']+Tstruct['SN2'])
+                #---
+                # print(Tstruct)
+                # Tint1=InterpolateTimeSeries(Tstruct['dt'],Tstruct['SN1'],dtfmt='%Y-%m-%d %H:%M:%S')
+                # Tint2=InterpolateTimeSeries(Tstruct['dt'],Tstruct['SN2'],dtfmt='%Y-%m-%d %H:%M:%S')
+                # Tint3=InterpolateTimeSeries(Tstruct['dt'],Tstruct['SN3'],dtfmt='%Y-%m-%d %H:%M:%S')
+                # Tint4=InterpolateTimeSeries(Tstruct['dt'],Tstruct['SN4'],dtfmt='%Y-%m-%d %H:%M:%S')
+                TFB=InterpolateTimeSeries(Tstruct['dt'],Tstruct['FB'],dtfmt='%Y-%m-%d %H:%M:%S')
+                dt=P.get_dt()
+                # SN1=Tint1(dt)
+                # SN2=Tint2(dt)
+                # SN3=Tint3(dt)
+                # SN4=Tint4(dt)
+                Tfb=TFB(dt)
+
+                X=np.vstack((Tfb,np.ones(len(Tfb)))).T
+                model = smapi.RLM(P.dZD, X)
+                m = model.fit()
+                pred=m.predict()
+                print(m.summary())
+
+                plt.figure(figsize=(12,8))
+                plt.scatter(Tfb,P.dZD,label='delta Tfb')
+                # plt.scatter(P.dZD,SN1,label='SN1')
+                # plt.scatter(P.dZD,SN2,label='SN2')
+                # plt.scatter(P.dZD,SN3,label='SN3')
+                # plt.scatter(P.dZD,SN4,label='SN4')
+                plt.plot(Tfb,pred)
+                plt.legend()
+                plt.show()
+            
+    
+    
+            
+    ofile=os.path.join(cfg['DATA']['data_dir'],'corrections_stats'+args.export_suff+'.'+cfg['DATA']['rohcont_unified_corrections_file_suffix']+'.pkl')
+    # stats_file=os.path.join(cfg['DATA']['data_dir'],'corrections_stats.'+cfg['DATA']['rohcont_unified_corrections_file_suffix']+'.pkl')
+    with open(ofile,'wb') as f:
         pickle.dump(stats,f)
+        print(stats)
+        print("Corrections stats. exported to file: {}".format(ofile))
     
     # print('-----------------')    
     # f=os.path.join(cfg['DATA']['data_dir'],cfg['DATA']['cross_scan_data_file'])
@@ -595,7 +689,7 @@ class continuousCorrections():
     Given a path to log file with history of continuous corrections changes 
     the class allows to obtain value for any given date
     '''
-    def __init__(self, in_file=None):
+    def __init__(self, in_file=None, **kwargs):
         self.in_file=in_file
         
         self.temp=np.loadtxt(in_file, dtype=str)
@@ -610,6 +704,10 @@ class continuousCorrections():
         self.dxZD=np.array(self.temp[:,1],dtype=float)
         self.val_inter_dZD=interpolate.interp1d(self.x,self.dZD,fill_value="extrapolate", kind='previous')
         self.val_inter_dxZD=interpolate.interp1d(self.x,self.dxZD,fill_value="extrapolate", kind='previous')
+    
+    def load_csv(self,**kwargs):
+        '''
+        '''
     def toX(self,dt : list):
         return [(x-self.dt0).total_seconds() for x in dt ]
     
@@ -636,3 +734,49 @@ class continuousCorrections():
         '''
         return self.val_inter_dZD(self.toX(dt)),self.val_inter_dxZD(self.toX(dt))
     
+
+
+class InterpolateTimeSeries():
+    '''
+    Interpolation object.
+    The class allows to obtain value for any given date
+    '''
+    def __init__(self, dt,y,dtfmt='%Y-%m-%dT%H:%M:%S',**kwargs):
+        assert len(dt)>1
+        assert len(dt)==len(y)
+
+        self.dt=[ datetime.datetime.strptime(x, dtfmt) for x in dt ]
+        self.dt0=self.dt[0]
+        self.x=self.toX(self.dt)
+        
+        self.y=y.to_numpy()
+        self.val_inter=interpolate.interp1d(self.x,self.y,fill_value="extrapolate", kind='linear')
+    
+    def toX(self,dt : list):
+        return [(x-self.dt0).total_seconds() for x in dt ]
+    
+    def last(self) -> tuple:
+        '''
+        return last known correction
+        returns
+        -------
+            tuple(dZD,dxZD)
+        '''
+        return self.y[-1]
+        
+    def __call__(self,dt : list):    
+        '''
+        calculate continuous corrections used up to given datetime
+        
+        parameters
+        ----------
+            dt - datetime object for which interpolated values are to be calculated
+        
+        returns
+        -------
+            1-d array like
+        '''
+        return self.val_inter(self.toX(dt))
+
+
+        

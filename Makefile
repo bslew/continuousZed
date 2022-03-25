@@ -49,15 +49,14 @@ dw_crossscan_data:
 	-cat data/FastScan_12.00.off | sed -e '/^#/d' | wc -l
 	-cat data/FastScan_22.00.off | sed -e '/^#/d' | wc -l
 
-export_data:
-	@echo "export unified corrections for pointing model fitting"
-	@echo "the pointing corrections will be reduced to corrections"
-	@echo "as would be measured using the ....what..?"
-	source ${VENV}/bin/activate && continuousZed.py --median -o data/unified_corrections continuousZed.py --median -o data/unified_corrections --start_time "2022-02-11 00:00:00"  ${VERB}
 
 dw_rt4_data:
 	-scp rt32time@galaxy:~/continuousZed/data/continuous_corrections.txt data
 	-scp rt32time@galaxy:~/continuousZed/data/ROH.? data
+
+dw_tstruct_data:
+	mysql -uroot -p -h galaxy.astro.int kra -e 'select * from struct_temp_tewa_avg where dt>"2022-01-01 00:00:00"' | tr '\t' ',' > data/Tstruct.csv
+	gzip data/Tstruct.csv
 
 cat_data:
 	more data/FastScan_*.off
@@ -70,8 +69,22 @@ zed: dw_crossscan_data send_zed_to_rt4
 
 calc_median:
 	source ${VENV}/bin/activate && continuousZed.py --median ${VERB}
-	
-sync_web_plots: dw_crossscan_data calc_median export_data
-	-cp -p data/*.jpg data/*.pkl /home/rt32time/rt32time/data
-	-cp -p data/unified_corrections*.off /home/rt32time/rt32time/data
 
+export_data:
+	@echo "export unified corrections for pointing model fitting"
+	@echo "the pointing corrections will be reduced to corrections"
+	@echo "as would be measured using the ....what..?"
+	source ${VENV}/bin/activate && continuousZed.py --median --export_suff _since20220211 --start_time "2022-02-11 00:00:00"  ${VERB}
+#	mv data/corrections_stats.unified.pkl data/corrections_since20220211_stats.unified.pkl
+#	rename corrections_C.unified.jpg
+		
+sync_web_plots: dw_crossscan_data export_data calc_median 
+	-cp -p data/*.jpg data/*.pkl /home/rt32time/rt32time/data
+	-cp -p data/corrections_* /home/rt32time/rt32time/data
+	-cp -p data/corrections-* /home/rt32time/rt32time/data
+
+copy_web_plots_devel: 
+	-cp -p data/*.jpg data/*.pkl ~/programy/rt4/time-distro/time-client-app/client/rt32time/data
+	-cp -p data/corrections_* ~/programy/rt4/time-distro/time-client-app/client/rt32time/data
+	-cp -p data/corrections-* ~/programy/rt4/time-distro/time-client-app/client/rt32time/data
+	

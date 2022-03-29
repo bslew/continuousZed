@@ -196,7 +196,7 @@ class fastScanCorrections():
             l='src,dtAZ,AZ,dAZ,dtZD,ZD,dZD\n'
             f.write(l)
             for i in range(len(self.pointing_data)):
-                l2='%s,' % src[i]
+                l='%s,' % src[i]
                 l+='%s-%s-%s %s,' % (self.pointing_data[i][3],self.pointing_data[i][2],self.pointing_data[i][1],self.pointing_data[i][4])
                 l+='%s,%.5f,' % (self.pointing_data[i][5],self.dxZD[i]/sZ[i])
                 l+='%s-%s-%s %s,' % (self.pointing_data[i][9],self.pointing_data[i][8],self.pointing_data[i][7],self.pointing_data[i][10])

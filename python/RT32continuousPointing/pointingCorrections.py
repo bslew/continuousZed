@@ -193,14 +193,15 @@ class fastScanCorrections():
         save to CSV as well
         '''
         with open(fname+".csv",'w') as f:
-            l='src,dtAZ,AZ,dAZ,dtZD,ZD,dZD\n'
+            l='src,dtAZ,AZ,dAZ,dtZD,ZD,dZD,dAZsinZD\n'
             f.write(l)
             for i in range(len(self.pointing_data)):
                 l='%s,' % src[i]
                 l+='%s-%s-%s %s,' % (self.pointing_data[i][3],self.pointing_data[i][2],self.pointing_data[i][1],self.pointing_data[i][4])
                 l+='%s,%.5f,' % (self.pointing_data[i][5],self.dxZD[i]/sZ[i])
                 l+='%s-%s-%s %s,' % (self.pointing_data[i][9],self.pointing_data[i][8],self.pointing_data[i][7],self.pointing_data[i][10])
-                l+='%s,%.5f' % (self.pointing_data[i][11],self.dZD[i])
+                l+='%s,%.5f,' % (self.pointing_data[i][11],self.dZD[i])
+                l+='%.5f' % (self.dxZD[i])
                 l+='\n'
                 f.write(l)
                 

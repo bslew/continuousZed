@@ -55,7 +55,7 @@ dw_rt4_data:
 	-scp rt32time@galaxy:~/continuousZed/data/ROH.? data
 
 dw_tstruct_data:
-	mysql -uroot -p -h galaxy.astro.int kra -e 'select * from struct_temp_tewa_avg where dt>"2022-01-01 00:00:00"' | tr '\t' ',' > data/Tstruct.csv
+	mysql -uroot -p -h galaxy.astro.int kra -e 'select * from struct_temp_tewa_avg where dt>"2022-02-11 00:00:00" and id mod 6=0' | tr '\t' ',' > data/Tstruct.csv
 	gzip data/Tstruct.csv
 
 cat_data:

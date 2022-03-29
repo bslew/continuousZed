@@ -10,11 +10,13 @@ import datetime
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
+from matplotlib.ticker import (MultipleLocator, AutoMinorLocator)
 from scipy import interpolate
 import pandas as pd
 from RT32continuousPointing import confidenceRange
 import pickle
 import statsmodels.api as smapi
+import copy
 
 
 class fastScanCorrections():
@@ -113,7 +115,8 @@ class fastScanCorrections():
             h=h+nsigma*(h-m)
             selected=np.logical_and(self.dZD<h,self.dZD>l)
             # self.pointing_data=[ x for i,x in enumerate(self.pointing_data) if selected[i]]
-            if self.verbose>0:
+            if self.verbose>2:
+                print('dZD outliers removal')
                 print(l,h)
                 print(selected)
                 print(self.dZD)
@@ -125,7 +128,8 @@ class fastScanCorrections():
             l=l-nsigma*(m-l)
             h=h+nsigma*(h-m)
             selected=np.logical_and(selected,self.dxZD<h,self.dxZD>l)
-            if self.verbose>0:
+            if self.verbose>2:
+                print('dxZD outliers removal')
                 print(l,h)
                 print(selected)
                 print(self.dxZD)
@@ -185,11 +189,30 @@ class fastScanCorrections():
                 l+='%s %.5f' % (self.pointing_data[i][11],self.dZD[i])
                 l+='\n'
                 f.write(l)
+        '''
+        save to CSV as well
+        '''
+        with open(fname+".csv",'w') as f:
+            l='src,dtAZ,AZ,dAZ,dtZD,ZD,dZD\n'
+            f.write(l)
+            for i in range(len(self.pointing_data)):
+                l2='%s,' % src[i]
+                l+='%s-%s-%s %s,' % (self.pointing_data[i][3],self.pointing_data[i][2],self.pointing_data[i][1],self.pointing_data[i][4])
+                l+='%s,%.5f,' % (self.pointing_data[i][5],self.dxZD[i]/sZ[i])
+                l+='%s-%s-%s %s,' % (self.pointing_data[i][9],self.pointing_data[i][8],self.pointing_data[i][7],self.pointing_data[i][10])
+                l+='%s,%.5f' % (self.pointing_data[i][11],self.dZD[i])
+                l+='\n'
+                f.write(l)
+                
 
-    def stats_plots(self,receiver='',freq='', outfile='', fwhp=None):
+    def stats_plots(self,receiver='',freq='', outfile='', fwhp=None,**kwargs):
         '''
         '''
         # if self.verbose>1:
+        plot=False
+        if 'plot' in kwargs.keys():
+            plot=kwargs['plot']
+            
         
         stats={}
         
@@ -199,14 +222,15 @@ class fastScanCorrections():
         '''
         cross ZD corrections vs time
         '''
-        fig=plt.figure(figsize=(12,8))
-        locator = mdates.AutoDateLocator(minticks=3, maxticks=7)
-        formatter = mdates.ConciseDateFormatter(locator)
-        ax1=plt.subplot(211)
-        ax1.xaxis.set_major_locator(locator)
-        ax1.xaxis.set_major_formatter(formatter)
-        lab='receiver: {} ({} GHz)'.format(receiver,freq)
-        plt.plot(x,y,'o-', label=lab)
+        if plot:
+            fig=plt.figure(figsize=(12,8))
+            locator = mdates.AutoDateLocator(minticks=3, maxticks=7)
+            formatter = mdates.ConciseDateFormatter(locator)
+            ax1=plt.subplot(211)
+            ax1.xaxis.set_major_locator(locator)
+            ax1.xaxis.set_major_formatter(formatter)
+            lab='receiver: {} ({} GHz)'.format(receiver,freq)
+            plt.plot(x,y,'o-', label=lab)
         
         #plot annotations
         m=np.median(y)
@@ -220,28 +244,33 @@ class fastScanCorrections():
         stats['dxZD']['rms']='%.2f' % rms
 
         
-        plt.axhline(np.median(y),lw=2,c='k')
-        plt.annotate('median={:.1f} mdeg'.format(m),xy=(0.01,0.01), xycoords=('axes fraction','axes fraction'), fontsize=12)
+        if plot:
+            plt.axhline(np.median(y),lw=2,c='k')
+            plt.annotate('median={:.1f} mdeg'.format(m),xy=(0.01,0.01), xycoords=('axes fraction','axes fraction'), fontsize=12)
         l,h=np.array(confidenceRange.confidenceRange(y).getTwoSidedTwoSigmaConfidenceRange())
         stats['dxZD']['1sigma']=(l,h)
-        plt.axhspan(l,h,alpha=0.2, color='green')
+        if plot:
+            plt.axhspan(l,h,alpha=0.2, color='green')
         l,h=np.array(confidenceRange.confidenceRange(y).getTwoSidedOneSigmaConfidenceRange())
         stats['dxZD']['2sigma']=(l,h)
-        plt.axhspan(l,h,alpha=0.2, color='green')
+        if plot:
+            plt.axhspan(l,h,alpha=0.2, color='green')
         # plt.annotate('95% CR',xy=(0.02,(m+h)/2), xycoords=('axes fraction','data'), fontsize=15)
         
-        plt.legend(loc='lower right')
-        plt.grid()
-        plt.xlabel('time [UTC]')
-        plt.ylabel('cross-ZD correction [mdeg]')
+        if plot:
+            plt.legend(loc='lower right')
+            plt.grid()
+            plt.xlabel('time [UTC]')
+            plt.ylabel('cross-ZD correction [mdeg]')
 
         '''
         ZD plot annotations
         '''
 
-        plt.subplot(212,sharex=ax1)
         y=self.dZD*1000
-        plt.plot(x,y,'o-')
+        if plot:
+            plt.subplot(212,sharex=ax1)
+            plt.plot(x,y,'o-')
 
         #plot annotations
         m=np.median(y)
@@ -251,24 +280,27 @@ class fastScanCorrections():
         stats['dZD']['sigma']='%.2f' % y.std()
         stats['dZD']['rms']='%.2f' % rms
 
-        plt.axhline(m,lw=2,c='k')
-        # plt.annotate('median={:.1f}'.format(m),xy=(0.01,0.01), xycoords=('axes fraction','data'))
-        plt.annotate('median={:.1f} mdeg'.format(m),xy=(0.01,0.01), xycoords=('axes fraction','axes fraction'), fontsize=12)
+        if plot:
+            plt.axhline(m,lw=2,c='k')
+            plt.annotate('median={:.1f} mdeg'.format(m),xy=(0.01,0.01), xycoords=('axes fraction','axes fraction'), fontsize=12)
         l,h=np.array(confidenceRange.confidenceRange(y).getTwoSidedTwoSigmaConfidenceRange())
         stats['dZD']['1sigma']=(l,h)
-        plt.axhspan(l,h,alpha=0.2, color='green')
+        if plot:
+            plt.axhspan(l,h,alpha=0.2, color='green')
         l,h=np.array(confidenceRange.confidenceRange(y).getTwoSidedOneSigmaConfidenceRange())
         stats['dZD']['1sigma']=(l,h)
-        plt.axhspan(l,h,alpha=0.2, color='green')
+        if plot:
+            plt.axhspan(l,h,alpha=0.2, color='green')
         # plt.annotate('95% CR',xy=(0.02,(m+h)/2), xycoords=('axes fraction','data'), fontsize=15)
         
-        plt.grid()
-        plt.xlabel('time [UTC]')
-        plt.ylabel('ZD correction [mdeg]')
+        if plot:
+            plt.grid()
+            plt.xlabel('time [UTC]')
+            plt.ylabel('ZD correction [mdeg]')
+            plt.show()
 
-
-        if outfile!='':
-            plt.savefig(outfile)
+            if outfile!='':
+                plt.savefig(outfile)
         # self.
         
         return stats
@@ -430,6 +462,8 @@ def get_median_corrections(args,cfg):
     stats['receivers']={}
     # stats['correction_freq']=correction_freq
     
+    rcu={} # ROH and contonuous corrections unified to most recent epoch
+    
     for i,rec in enumerate(receivers):
         print('-----------------')
         print('Raw pointing corrections')
@@ -485,15 +519,15 @@ def get_median_corrections(args,cfg):
             # P.subContinuousCorrections(rohCorr)
             # P.addxZDoffset(rxZD)
             # P.addZDoffset(rZD)
-    
             print(P)
+            
             
             '''
             calculate stats
             '''
             f=os.path.join(cfg['DATA']['data_dir'],'corrections'+args.export_suff+'-'+rec+'.'+cfg['DATA']['rohcont_unified_corrections_file_suffix']+'.jpg')
             # f=os.path.join(cfg['DATA']['data_dir'],'corrections_'+rec+'.'+cfg['DATA']['rohcont_unified_corrections_file_suffix']+'.jpg')
-            stats['receivers'][rec]=P.stats_plots(receiver=rec,freq=freq,outfile=f)
+            stats['receivers'][rec]=P.stats_plots(receiver=rec,freq=freq,outfile=f,args=args)
             stats['receivers'][rec]['fwhp']=cfg[rec]['fwhp']
             stats['receivers'][rec]['freq']=cfg[rec]['freq']
             stats['receivers'][rec]['dxZD']['sigma2fwhp']='%.2f' % (float(stats['receivers'][rec]['dxZD']['sigma'])/cfg.getfloat(rec,'fwhp')/1000)
@@ -506,8 +540,9 @@ def get_median_corrections(args,cfg):
             print('dZD rms2fwhp: ',stats['receivers'][rec]['dZD']['rms2fwhp'])
             print()
             if args.verbose>2:
-                plt.show()
                 print(stats)
+
+            rcu[rec]=copy.deepcopy(P)
             
     
             '''
@@ -532,11 +567,13 @@ def get_median_corrections(args,cfg):
     
             if args.Tstruct_file!='':
                 Tstruct=pd.read_csv(args.Tstruct_file)
+                Tstruct['datetime']=[ datetime.datetime.strptime(x,"%Y-%m-%d %H:%M:%S") for x in Tstruct['dt']]
                 print('Tstruct has {} entries'.format(len(Tstruct)))
                 Tstruct['TL1']=(Tstruct['T_11']+Tstruct['T_12']+Tstruct['T_13']+Tstruct['T_14'])/4
                 Tstruct['TL2']=(Tstruct['T_21']+Tstruct['T_22']+Tstruct['T_23']+Tstruct['T_24'])/4
                 Tstruct['TL3']=(Tstruct['T_31']+Tstruct['T_32']+Tstruct['T_33']+Tstruct['T_34'])/4
                 Tstruct['TL4']=(Tstruct['T_41']+Tstruct['T_42']+Tstruct['T_43']+Tstruct['T_44'])/4
+                Tstruct['T']=(Tstruct['TL1']+Tstruct['TL2']+Tstruct['TL3']+Tstruct['TL4'])/4
 
                 # Tstruct['SN1']=((Tstruct['T_11']-Tstruct['TL1'])/(Tstruct['T_13']-Tstruct['TL1']))
                 # Tstruct['SN2']=((Tstruct['T_21']-Tstruct['TL2'])/(Tstruct['T_23']-Tstruct['TL2']))
@@ -551,16 +588,20 @@ def get_median_corrections(args,cfg):
                 Tstruct['SN2']=Tstruct['TL4']-Tstruct['TL3']
                 Tstruct['FB']=0.5*(Tstruct['SN1']+Tstruct['SN2'])
                 
-                plt.figure(figsize=(12,8))
-                locator = mdates.AutoDateLocator(minticks=3, maxticks=7)
-                formatter = mdates.ConciseDateFormatter(locator)
-                ax1=plt.subplot(111)
-                ax1.xaxis.set_major_locator(locator)
-                ax1.xaxis.set_major_formatter(formatter)
-                dt=[ datetime.datetime.strptime(x,"%Y-%m-%d %H:%M:%S") for x in Tstruct['dt'][::10]]
-                plt.scatter(dt,Tstruct['FB'][::10],label='front-back difference')
-                plt.legend()
-                plt.show()
+                rcu['Tstruct']=Tstruct[::10]
+                
+                if args.plot:
+                    if args.verbose>2:
+                        plt.figure(figsize=(12,8))
+                        locator = mdates.AutoDateLocator(minticks=3, maxticks=7)
+                        formatter = mdates.ConciseDateFormatter(locator)
+                        ax1=plt.subplot(111)
+                        ax1.xaxis.set_major_locator(locator)
+                        ax1.xaxis.set_major_formatter(formatter)
+                        dt=[ datetime.datetime.strptime(x,"%Y-%m-%d %H:%M:%S") for x in Tstruct['dt'][::10]]
+                        plt.scatter(dt,Tstruct['FB'][::10],label='front-back difference')
+                        plt.legend()
+                        plt.show()
                 
                 # control
                 # Tstruct['SN1']=Tstruct['TL1']-Tstruct['TL4']
@@ -586,17 +627,17 @@ def get_median_corrections(args,cfg):
                 pred=m.predict()
                 print(m.summary())
 
-                plt.figure(figsize=(12,8))
-                plt.scatter(Tfb,P.dZD,label='delta Tfb')
-                # plt.scatter(P.dZD,SN1,label='SN1')
-                # plt.scatter(P.dZD,SN2,label='SN2')
-                # plt.scatter(P.dZD,SN3,label='SN3')
-                # plt.scatter(P.dZD,SN4,label='SN4')
-                plt.plot(Tfb,pred)
-                plt.legend()
-                plt.show()
+                if args.plot:
+                    if args.verbose>2:
+                        plt.figure(figsize=(12,8))
+                        plt.scatter(Tfb,P.dZD,label='delta Tfb')
+                        plt.plot(Tfb,pred)
+                        plt.legend()
+                        plt.show()
             
     
+    if args.plot:
+        plot_corrections_2panel(rcu, topPanel=['C','M','X'], bottomPanel=['Tstruct'])
     
             
     ofile=os.path.join(cfg['DATA']['data_dir'],'corrections_stats'+args.export_suff+'.'+cfg['DATA']['rohcont_unified_corrections_file_suffix']+'.pkl')
@@ -620,11 +661,55 @@ def get_median_corrections(args,cfg):
     # print(P)
     mCrossElev,mdZD=P.get_median()
 
-    if args.plot:
-        plot_corrections(P)
+    # if args.plot:
+    #     plot_corrections(P)
     
     return mCrossElev,mdZD
 
+def plot_corrections_2panel(D,topPanel=[],bottomPanel=[],xcol='datetime',corr='ZD'):
+    '''
+    D - dictionary containing continuousCorrections objects for plotting.
+        If 'Tstruct' is given it is treated as pandas DataFrame which
+        must contain 'dt' column with datetime objects. It is plotted in bottom plot
+        
+    topPanel - list of columns to plot in the top panel
+    bottomPanel - list of columns to plot in the bottom panel
+    '''
+    
+    plt.figure(figsize=(12,10))
+    locator = mdates.AutoDateLocator(minticks=7, maxticks=12)
+    formatter = mdates.ConciseDateFormatter(locator)
+    ax1=plt.subplot(211)
+    ax1.xaxis.set_major_locator(locator)
+    ax1.xaxis.set_major_formatter(formatter)
+    ax1.xaxis.set_minor_locator(AutoMinorLocator())    
+    ax1.yaxis.set_minor_locator(AutoMinorLocator())    
+
+    for c in topPanel:
+        # for k,C in D.items():
+        plt.plot(D[c].get_dt(),D[c].dZD*1000,label=c)
+    plt.xlabel('time [UTC]')
+    plt.ylabel('$\Delta$ ZD [mdeg]')
+    plt.legend(loc='upper right')
+    plt.grid()
+
+    ax2=plt.subplot(212,sharex=ax1)
+    ax2.yaxis.set_minor_locator(AutoMinorLocator())    
+    # for k,C in D.items():
+    for c in bottomPanel:
+        if c in D.keys():
+            if c=='Tstruct':
+                plt.plot(D[c][xcol],D[c]['T'], label='Mean Tstruct')
+                plt.plot(D[c][xcol],D[c]['FB'], label='Mean Front Back diff.')
+            else:
+                plt.plot(D[c].get_dt(),D[c].dZD*1000,label=c)
+            
+    plt.xlabel('time [UTC]')
+    plt.ylabel('T [degC]')
+    plt.legend(loc='upper right')
+    plt.grid()
+
+    plt.show()
 
 def plot_corrections(P):
     '''

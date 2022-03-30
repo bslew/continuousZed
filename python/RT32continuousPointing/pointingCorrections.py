@@ -497,7 +497,7 @@ def get_median_corrections(args,cfg):
             print(P)
     
             '''
-            export corrections if requested in format consistent with fast_scan program
+            export corrections in format consistent with fast_scan program
             '''   
             ofile=os.path.join(cfg['DATA']['data_dir'],'corrections'+args.export_suff+'-'+rec+'.'+cfg['DATA']['roh_unified_corrections_file_suffix']+'.off')
             P.save(ofile)
@@ -516,6 +516,11 @@ def get_median_corrections(args,cfg):
             P.addxZDoffset(-cxZD)
             P.addZDoffset(-cZD)
     
+            '''
+            export corrections in format consistent with fast_scan program
+            '''   
+            ofile=os.path.join(cfg['DATA']['data_dir'],'corrections'+args.export_suff+'-'+rec+'.'+cfg['DATA']['rohcont_unified_corrections_file_suffix']+'.off')
+            P.save(ofile)
     
             # P.subContinuousCorrections(rohCorr)
             # P.addxZDoffset(rxZD)

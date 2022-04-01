@@ -74,7 +74,7 @@ export_data:
 	@echo "export unified corrections for pointing model fitting"
 	@echo "the pointing corrections will be reduced to corrections"
 	@echo "as would be measured using the ....what..?"
-	source ${VENV}/bin/activate && continuousZed.py --median --export_suff _since20220211 --start_time "2022-02-11 00:00:00"  ${VERB}
+	source ${VENV}/bin/activate && continuousZed.py --median --export_suff _since20220211 --start_time "2022-02-11 00:00:00" --historical_data  ${VERB}
 #	mv data/corrections_stats.unified.pkl data/corrections_since20220211_stats.unified.pkl
 #	rename corrections_C.unified.jpg
 		

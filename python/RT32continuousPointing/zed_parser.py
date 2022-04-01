@@ -103,6 +103,8 @@ USAGE
                             ''',
                             default='')
         
+        parser.add_argument('--historical_data', action='store_true',
+                            help='modifier for historical data plots [debug stuff]')
         parser.add_argument('--show', action='store_true',
                             help='plot loaded corrections [debug stuff]')
         parser.add_argument('--plot_stats', action='store_true',

@@ -218,6 +218,13 @@ class fastScanCorrections():
         model=None
         if 'model' in kwargs.keys():
             model=kwargs['model']
+            
+        historical_data=False
+        if 'historical_data' in kwargs.keys():
+            historical_data=kwargs['historical_data']
+        
+        
+            
         stats={}
         
         x=self.dt
@@ -235,8 +242,8 @@ class fastScanCorrections():
         ax1.xaxis.set_major_formatter(formatter)
         lab='receiver: {} ({} GHz)'.format(receiver,freq)
         plt.plot(x,y,'o-', label=lab)
-        if model=="linear":
-            plt.plot(x,model['dxZD']['pred']*1000,'r-', label='model')
+        if model:
+            plt.plot(x,model['dxZD']['pred']*1000,'k--', label='model')
         
         #show annotations
         m=np.median(y)
@@ -251,16 +258,17 @@ class fastScanCorrections():
 
         
         # if show:
-        plt.axhline(np.median(y),lw=2,c='k')
-        plt.annotate('median={:.1f} mdeg'.format(m),xy=(0.01,0.01), xycoords=('axes fraction','axes fraction'), fontsize=12)
-        l,h=np.array(confidenceRange.confidenceRange(y).getTwoSidedTwoSigmaConfidenceRange())
-        stats['dxZD']['1sigma']=(l,h)
-        # if show:
-        plt.axhspan(l,h,alpha=0.2, color='green')
-        l,h=np.array(confidenceRange.confidenceRange(y).getTwoSidedOneSigmaConfidenceRange())
-        stats['dxZD']['2sigma']=(l,h)
-        # if show:
-        plt.axhspan(l,h,alpha=0.2, color='green')
+        if not historical_data:
+            plt.axhline(np.median(y),lw=2,c='k')
+            plt.annotate('median={:.1f} mdeg'.format(m),xy=(0.01,0.01), xycoords=('axes fraction','axes fraction'), fontsize=12)
+            l,h=np.array(confidenceRange.confidenceRange(y).getTwoSidedTwoSigmaConfidenceRange())
+            stats['dxZD']['1sigma']=(l,h)
+            # if show:
+            plt.axhspan(l,h,alpha=0.2, color='green')
+            l,h=np.array(confidenceRange.confidenceRange(y).getTwoSidedOneSigmaConfidenceRange())
+            stats['dxZD']['2sigma']=(l,h)
+            # if show:
+            plt.axhspan(l,h,alpha=0.2, color='green')
         # plt.annotate('95% CR',xy=(0.02,(m+h)/2), xycoords=('axes fraction','data'), fontsize=15)
         
         # if show:
@@ -277,8 +285,8 @@ class fastScanCorrections():
         # if show:
         plt.subplot(212,sharex=ax1)
         plt.plot(x,y,'o-')
-        if model=="linear":
-            plt.plot(x,model['dZD']['pred']*1000,'r-', label='model')
+        if model:
+            plt.plot(x,model['dZD']['pred']*1000,'k--', label='model')
 
         #show annotations
         m=np.median(y)
@@ -288,18 +296,18 @@ class fastScanCorrections():
         stats['dZD']['sigma']='%.2f' % y.std()
         stats['dZD']['rms']='%.2f' % rms
 
-        # if show:
-        plt.axhline(m,lw=2,c='k')
-        plt.annotate('median={:.1f} mdeg'.format(m),xy=(0.01,0.01), xycoords=('axes fraction','axes fraction'), fontsize=12)
-        l,h=np.array(confidenceRange.confidenceRange(y).getTwoSidedTwoSigmaConfidenceRange())
-        stats['dZD']['1sigma']=(l,h)
-        # if show:
-        plt.axhspan(l,h,alpha=0.2, color='green')
-        l,h=np.array(confidenceRange.confidenceRange(y).getTwoSidedOneSigmaConfidenceRange())
-        stats['dZD']['1sigma']=(l,h)
-        # if show:
-        plt.axhspan(l,h,alpha=0.2, color='green')
-        # plt.annotate('95% CR',xy=(0.02,(m+h)/2), xycoords=('axes fraction','data'), fontsize=15)
+        if not historical_data:
+            plt.axhline(m,lw=2,c='k')
+            plt.annotate('median={:.1f} mdeg'.format(m),xy=(0.01,0.01), xycoords=('axes fraction','axes fraction'), fontsize=12)
+            l,h=np.array(confidenceRange.confidenceRange(y).getTwoSidedTwoSigmaConfidenceRange())
+            stats['dZD']['1sigma']=(l,h)
+            # if show:
+            plt.axhspan(l,h,alpha=0.2, color='green')
+            l,h=np.array(confidenceRange.confidenceRange(y).getTwoSidedOneSigmaConfidenceRange())
+            stats['dZD']['1sigma']=(l,h)
+            # if show:
+            plt.axhspan(l,h,alpha=0.2, color='green')
+            # plt.annotate('95% CR',xy=(0.02,(m+h)/2), xycoords=('axes fraction','data'), fontsize=15)
         
         # if show:
         plt.grid()
@@ -377,9 +385,13 @@ class fastScanCorrections():
 
     def get_linear_model_prediction(self) -> dict:
         '''
-        returns dict({'dxZD' : {'model' : statsmodels fit, 'pred' :array_like }, 'dZD' : {'model' : statsmodels fit, 'pred' : array_like } })
+        returns dict({
+            'dxZD' : {'model' : statsmodels fit, 'pred' :array_like }, 
+            'dZD' : {'model' : statsmodels fit, 'pred' : array_like },
+            'name' : str
+            })
         '''
-        ret={}
+        ret={ 'name' : 'linear' }
         ObsTime=[ self.dt, self.dt_EL]
         Y=[self.dxZD,self.dZD]
         lab=['dxZD','dZD']
@@ -502,6 +514,8 @@ def get_pointing_corrections(args,cfg):
     stats['receivers']={}
     # stats['correction_freq']=correction_freq
     
+    historical_data=args.historical_data
+    
     rcu={} # ROH and contonuous corrections unified to most recent epoch
     # rcu_model={} # model of ROH and contonuous corrections unified to most recent epoch
     
@@ -567,23 +581,25 @@ def get_pointing_corrections(args,cfg):
             # P.addZDoffset(rZD)
             print(P)
 
-            
-            linear_model=P.get_linear_model_prediction()
+            # corrections_model=None
+            # if cfg['ZED']['model']=='linear':
+            corrections_model=P.get_linear_model_prediction()
             
             '''
             calculate stats
             '''
             f=os.path.join(cfg['DATA']['data_dir'],'corrections'+args.export_suff+'-'+rec+'.'+cfg['DATA']['rohcont_unified_corrections_file_suffix']+'.jpg')
             # f=os.path.join(cfg['DATA']['data_dir'],'corrections_'+rec+'.'+cfg['DATA']['rohcont_unified_corrections_file_suffix']+'.jpg')
-            stats['receivers'][rec]=P.stats_plots(receiver=rec,freq=freq,outfile=f,show=args.show, args=args, model=linear_model)
+            stats['receivers'][rec]=P.stats_plots(receiver=rec,freq=freq,outfile=f,show=args.show, args=args, model=corrections_model, historical_data=historical_data)
             stats['receivers'][rec]['fwhp']=cfg[rec]['fwhp']
             stats['receivers'][rec]['freq']=cfg[rec]['freq']
             stats['receivers'][rec]['dxZD']['sigma2fwhp']='%.2f' % (float(stats['receivers'][rec]['dxZD']['sigma'])/cfg.getfloat(rec,'fwhp')/1000)
             stats['receivers'][rec]['dZD']['sigma2fwhp']='%.2f' % (float(stats['receivers'][rec]['dZD']['sigma'])/cfg.getfloat(rec,'fwhp')/1000)
             stats['receivers'][rec]['dxZD']['rms2fwhp']='%.2f' % (float(stats['receivers'][rec]['dxZD']['rms'])/cfg.getfloat(rec,'fwhp')/1000)
             stats['receivers'][rec]['dZD']['rms2fwhp']='%.2f' % (float(stats['receivers'][rec]['dZD']['rms'])/cfg.getfloat(rec,'fwhp')/1000)
-            stats['receivers'][rec]['dxZD']['linear_model']=linear_model['dxZD']['pred']
-            stats['receivers'][rec]['dZD']['linear_model']=linear_model['dZD']['pred']
+            stats['receivers'][rec]['dxZD']['model']=corrections_model['dxZD']['pred']
+            stats['receivers'][rec]['dZD']['model']=corrections_model['dZD']['pred']
+            stats['receivers'][rec]['dZD']['active_model_name']=model
             print('dxZD rms [mdeg]: ',stats['receivers'][rec]['dxZD']['rms'])
             print('dZD rms [mdeg]: ',stats['receivers'][rec]['dZD']['rms'])
             print('dxZD rms2fwhp: ',stats['receivers'][rec]['dxZD']['rms2fwhp'])

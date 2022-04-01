@@ -70,7 +70,7 @@ def main(argv=None): # IGNORE:C0111
 
     
     if args.median:
-        dxZD,dZD=pointingCorrections.get_median_corrections(args,cfg)
+        dxZD,dZD=pointingCorrections.get_pointing_corrections(args,cfg)
         # data=rt32comm.getCurrentContinuousCorrections()
         # print(data)
         logger.info('Continuous corrections for RT32 ZD: {:.0f}'.format(dZD*10000))
@@ -87,7 +87,7 @@ def main(argv=None): # IGNORE:C0111
         
     if args.set_dZD_auto:
         try:
-            _,dZD=pointingCorrections.get_median_corrections(args,cfg)
+            _,dZD=pointingCorrections.get_pointing_corrections(args,cfg)
             corr=int(dZD*10000)
             sendZDoffset(corr, cfg)
             logger.info("new continuous ZD correction: {}".format(corr))
@@ -101,7 +101,7 @@ def main(argv=None): # IGNORE:C0111
             pass
     if args.set_dxZD_auto:
         try:
-            dxZD,_=pointingCorrections.get_median_corrections(args,cfg)
+            dxZD,_=pointingCorrections.get_pointing_corrections(args,cfg)
             corr=int(dxZD*10000)
             sendxZDoffset(corr, cfg)
             logger.info("new continuous xZD correction: {}".format(corr))

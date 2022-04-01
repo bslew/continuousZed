@@ -103,7 +103,7 @@ USAGE
                             ''',
                             default='')
         
-        parser.add_argument('--plot', action='store_true',
+        parser.add_argument('--show', action='store_true',
                             help='plot loaded corrections [debug stuff]')
         parser.add_argument('--plot_stats', action='store_true',
                             help='plot corrections stats')

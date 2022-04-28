@@ -851,8 +851,26 @@ class continuousCorrections():
     '''
     def __init__(self, in_file=None, **kwargs):
         self.in_file=in_file
-        
-        self.temp=np.loadtxt(in_file, dtype=str)
+        try:
+            self.temp=np.loadtxt(in_file, dtype=str, ndmin=2)
+        except ValueError:
+            print("=============================================")
+            print("WARNING")
+            print("WARNING:detected file inconsistency in {}. Will try to load what makes sense.".format(in_file))
+            print("LOADED STUFF")
+            # try to load skipping bad lines
+            with open(in_file,'r') as f:
+                all=f.readlines()
+                tmpdata=[]
+                for l in all:
+                    ls=l.split()
+                    if len(ls)==3:
+                        tmpdata.append(ls)
+                    else:
+                        print("detected bad line, skipping ({})".format(ls))
+                self.temp=np.array(tmpdata)
+                print(self.temp)
+            print("=============================================")
         self.temp=self.temp.reshape((-1,3))
         if len(self.temp)==1:
             self.temp=np.vstack([self.temp[0],self.temp[0]])

@@ -3,7 +3,7 @@
 function storeROH {
 #	echo `date -u +%Y-%m-%dT%H:%M:%S`" "`ssh -oKexAlgorithms=+diffie-hellman-group1-sha1 oper@rt4.astro.int -C cat /home/oper/rt4_control/rt4_linux/DATA/$1.ROH` > data/ROH.$1.candidate
 	if [ `cat data/ROH.$1.candidate | wc -w` -eq 3 ]; then
-		cat data/ROH.$1.candidate >> cat data/ROH.$1
+		cat data/ROH.$1.candidate >> data/ROH.$1
 	else
 		echo "bad ROH, ignoring"
 	fi
